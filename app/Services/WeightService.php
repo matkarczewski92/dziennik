@@ -5,10 +5,16 @@ namespace App\Services;
 use App\Models\Animal;
 use App\Models\User;
 use App\Models\Weight;
+use App\Services\Animal\AnimalEventProjector;
 use Illuminate\Auth\Access\AuthorizationException;
 
 class WeightService
 {
+    public function __construct(
+        protected AnimalEventProjector $eventProjector,
+    ) {
+    }
+
     public function create(User $user, Animal $animal, array $data): Weight
     {
         $this->ensureOwnership($user, $animal);
@@ -25,6 +31,8 @@ class WeightService
             'current_weight_grams' => $weight->weight_grams,
         ])->save();
 
+        $this->eventProjector->projectWeight($weight);
+
         return $weight;
     }
 
@@ -34,7 +42,46 @@ class WeightService
             throw new AuthorizationException();
         }
 
+        $animal = $weight->animal;
         $weight->delete();
+
+        if ($animal) {
+            $animal->forceFill([
+                'current_weight_grams' => Weight::query()
+                    ->where('animal_id', $animal->id)
+                    ->orderByDesc('measured_at')
+                    ->value('weight_grams'),
+            ])->save();
+        }
+
+        $this->eventProjector->removeWeight($weight);
+    }
+
+    public function update(User $user, Weight $weight, array $data): Weight
+    {
+        if ((int) $weight->user_id !== (int) $user->id) {
+            throw new AuthorizationException();
+        }
+
+        $weight->update([
+            'measured_at' => $data['measured_at'],
+            'weight_grams' => $data['weight_grams'],
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        $animal = $weight->animal;
+        if ($animal) {
+            $animal->forceFill([
+                'current_weight_grams' => Weight::query()
+                    ->where('animal_id', $animal->id)
+                    ->orderByDesc('measured_at')
+                    ->value('weight_grams'),
+            ])->save();
+        }
+
+        $this->eventProjector->projectWeight($weight);
+
+        return $weight->refresh();
     }
 
     protected function ensureOwnership(User $user, Animal $animal): void
@@ -44,4 +91,3 @@ class WeightService
         }
     }
 }
-

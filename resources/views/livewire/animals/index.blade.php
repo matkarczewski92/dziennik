@@ -3,7 +3,7 @@
         <h1 class="h4 mb-0">Zwierzeta</h1>
         <div class="d-flex gap-2">
             <button class="btn btn-primary btn-sm" wire:click="openCreateModal">Dodaj recznie</button>
-            <button class="btn btn-outline-primary btn-sm" wire:click="openImportModal">Import po secret_tag</button>
+            <button class="btn btn-primary btn-sm" wire:click="openImportModal">Pobierz dane z hodowli</button>
         </div>
     </div>
 
@@ -96,7 +96,7 @@
 
                     <div class="row g-2">
                         <div class="col-12 col-md-6">
-                            <label class="form-label">Data dolaczenia</label>
+                            <label class="form-label">Data zakupu</label>
                             <input type="date" class="form-control @error('acquired_at') is-invalid @enderror" wire:model="acquired_at">
                         </div>
                         <div class="col-12 col-md-6">
@@ -108,23 +108,6 @@
                     <div>
                         <label class="form-label">Notatka</label>
                         <textarea class="form-control @error('notes') is-invalid @enderror" wire:model="notes" rows="3"></textarea>
-                    </div>
-
-                    <div>
-                        <label class="form-label">Morphy</label>
-                        <select
-                            multiple
-                            class="form-select @error('selectedMorphIds') is-invalid @enderror @error('selectedMorphIds.*') is-invalid @enderror"
-                            wire:model="selectedMorphIds"
-                            size="8"
-                        >
-                            @foreach($morphOptions as $morphOption)
-                                <option value="{{ $morphOption->id }}">{{ $morphOption->name }}</option>
-                            @endforeach
-                        </select>
-                        <div class="form-text">Mozesz wybrac wiele pozycji (Ctrl/Cmd + klik).</div>
-                        @error('selectedMorphIds') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                        @error('selectedMorphIds.*') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-2">
@@ -155,7 +138,7 @@
                 <h2 class="h5 mb-3">Import zwierzecia z API</h2>
                 <form wire:submit="importAnimal" class="vstack gap-2">
                     <div>
-                        <label class="form-label">secret_tag</label>
+                        <label class="form-label">Klucz</label>
                         <input type="text" class="form-control @error('importSecretTag') is-invalid @enderror" wire:model="importSecretTag">
                         @error('importSecretTag') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>

@@ -87,6 +87,16 @@ class Animal extends Model
         return $this->hasMany(Photo::class)->latest();
     }
 
+    public function offers(): HasMany
+    {
+        return $this->hasMany(AnimalOffer::class)->latest();
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(AnimalEvent::class)->orderByDesc('happened_at')->orderByDesc('id');
+    }
+
     public function animalGenotypes(): HasMany
     {
         return $this->hasMany(AnimalGenotype::class, 'animal_id');

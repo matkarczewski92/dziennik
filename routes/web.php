@@ -17,6 +17,7 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'not_blocked'])->group(function (): void {
     Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard');
+    Route::get('/account', fn () => view('account.settings'))->name('account.settings');
 
     Route::get('/animals', fn () => view('animals.index'))->name('animals.index');
     Route::get('/animals/{animal}', function (Animal $animal) {

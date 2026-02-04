@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use App\Models\Animal;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -21,6 +22,7 @@ class ImpersonateMiddleware
         $isImpersonating = $impersonatorId !== null;
         $impersonator = null;
         $isAdmin = $user?->hasRole('admin') ?? false;
+        $sidebarAnimals = collect();
 
         if ($isImpersonating) {
             $impersonator = User::query()->find($impersonatorId);
@@ -31,9 +33,18 @@ class ImpersonateMiddleware
             }
         }
 
+        if ($user) {
+            $sidebarAnimals = Animal::query()
+                ->ownedBy($user->id)
+                ->select(['id', 'name'])
+                ->orderBy('name')
+                ->get();
+        }
+
         View::share('isImpersonating', $isImpersonating);
         View::share('impersonator', $impersonator);
         View::share('isAdmin', $isAdmin);
+        View::share('sidebarAnimals', $sidebarAnimals);
 
         return $next($request);
     }

@@ -30,6 +30,20 @@ class NoteService
         $note->delete();
     }
 
+    public function update(User $user, Note $note, array $data): Note
+    {
+        if ((int) $note->user_id !== (int) $user->id) {
+            throw new AuthorizationException();
+        }
+
+        $note->update([
+            'body' => $data['body'],
+            'is_pinned' => (bool) ($data['is_pinned'] ?? false),
+        ]);
+
+        return $note->refresh();
+    }
+
     protected function ensureOwnership(User $user, Animal $animal): void
     {
         if ((int) $animal->user_id !== (int) $user->id) {
@@ -37,4 +51,3 @@ class NoteService
         }
     }
 }
-

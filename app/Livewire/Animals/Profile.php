@@ -11,12 +11,14 @@ use App\Models\Note;
 use App\Models\Photo;
 use App\Models\Shed;
 use App\Models\Weight;
+use App\Services\Animal\AnimalEventProjector;
 use App\Services\FeedingService;
 use App\Services\NoteService;
 use App\Services\PhotoService;
 use App\Services\ShedService;
 use App\Services\WeightService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -31,13 +33,23 @@ class Profile extends Component
 
     public array $feedingForm = [];
 
+    public ?int $editingFeedingId = null;
+
     public array $weightForm = [];
+
+    public ?int $editingWeightId = null;
 
     public array $shedForm = [];
 
+    public ?int $editingShedId = null;
+
     public array $noteForm = [];
 
+    public ?int $editingNoteId = null;
+
     public array $genotypeForm = [];
+
+    public ?int $editingGenotypeId = null;
 
     public $photoUpload;
 
@@ -64,34 +76,81 @@ class Profile extends Component
         }
     }
 
-    public function addGenotype(): void
+    public function addGenotype(AnimalEventProjector $eventProjector): void
     {
         $data = $this->validate([
-            'genotypeForm.genotype_id' => ['required', 'integer', 'exists:animal_genotype_category,id'],
+            'genotypeForm.gene_name' => ['required', 'string', 'max:255'],
             'genotypeForm.type' => ['required', 'in:v,h,p'],
         ]);
 
-        AnimalGenotype::query()->updateOrCreate(
-            [
-                'animal_id' => $this->animal->id,
-                'genotype_id' => (int) $data['genotypeForm']['genotype_id'],
-            ],
-            [
+        $geneName = trim((string) $data['genotypeForm']['gene_name']);
+        $category = AnimalGenotypeCategory::query()
+            ->whereRaw('LOWER(name) = ?', [Str::lower($geneName)])
+            ->first();
+
+        if (! $category) {
+            $this->addError('genotypeForm.gene_name', 'Nie znaleziono takiego genu w slowniku.');
+            return;
+        }
+
+        if ($this->editingGenotypeId) {
+            $genotype = AnimalGenotype::query()
+                ->where('animal_id', $this->animal->id)
+                ->findOrFail($this->editingGenotypeId);
+
+            $genotype->update([
+                'genotype_id' => (int) $category->id,
                 'type' => $data['genotypeForm']['type'],
-            ],
-        );
+            ]);
+            $eventProjector->projectGenotype($genotype);
+            session()->flash('success', 'Genotyp zostal zaktualizowany.');
+        } else {
+            $genotype = AnimalGenotype::query()->updateOrCreate(
+                [
+                    'animal_id' => $this->animal->id,
+                    'genotype_id' => (int) $category->id,
+                ],
+                [
+                    'type' => $data['genotypeForm']['type'],
+                ],
+            );
+            $eventProjector->projectGenotype($genotype);
+            session()->flash('success', 'Genotyp zostal zapisany.');
+        }
 
         $this->resetGenotypeForm();
-        session()->flash('success', 'Genotyp zostal zapisany.');
     }
 
-    public function deleteGenotype(int $genotypePivotId): void
+    public function startEditGenotype(int $genotypePivotId): void
+    {
+        $genotype = AnimalGenotype::query()
+            ->where('animal_id', $this->animal->id)
+            ->with('genotypeCategory')
+            ->findOrFail($genotypePivotId);
+
+        $this->editingGenotypeId = $genotype->id;
+        $this->genotypeForm = [
+            'gene_name' => (string) $genotype->genotypeCategory?->name,
+            'type' => (string) $genotype->type,
+        ];
+    }
+
+    public function cancelEditGenotype(): void
+    {
+        $this->resetGenotypeForm();
+    }
+
+    public function deleteGenotype(int $genotypePivotId, AnimalEventProjector $eventProjector): void
     {
         $genotype = AnimalGenotype::query()
             ->where('animal_id', $this->animal->id)
             ->findOrFail($genotypePivotId);
 
         $genotype->delete();
+        $eventProjector->removeGenotype($genotype);
+        if ($this->editingGenotypeId === $genotypePivotId) {
+            $this->resetGenotypeForm();
+        }
         session()->flash('success', 'Usunieto genotyp.');
     }
 
@@ -105,9 +164,44 @@ class Profile extends Component
             'feedingForm.notes' => ['nullable', 'string'],
         ]);
 
-        $feedingService->create(auth()->user(), $this->animal, $data['feedingForm']);
+        if ($this->editingFeedingId) {
+            $feeding = Feeding::query()
+                ->ownedBy(auth()->id())
+                ->where('animal_id', $this->animal->id)
+                ->findOrFail($this->editingFeedingId);
+
+            $this->authorize('update', $feeding);
+            $feedingService->update(auth()->user(), $feeding, $data['feedingForm']);
+            session()->flash('success', 'Wpis karmienia zostal zaktualizowany.');
+        } else {
+            $feedingService->create(auth()->user(), $this->animal, $data['feedingForm']);
+            session()->flash('success', 'Dodano karmienie.');
+        }
+
         $this->resetFeedingForm();
-        session()->flash('success', 'Dodano karmienie.');
+    }
+
+    public function startEditFeeding(int $feedingId): void
+    {
+        $feeding = Feeding::query()
+            ->ownedBy(auth()->id())
+            ->where('animal_id', $this->animal->id)
+            ->findOrFail($feedingId);
+
+        $this->authorize('update', $feeding);
+        $this->editingFeedingId = $feeding->id;
+        $this->feedingForm = [
+            'fed_at' => $feeding->fed_at?->toDateString(),
+            'feed_id' => $feeding->feed_id,
+            'prey_weight_grams' => $feeding->prey_weight_grams !== null ? (float) $feeding->prey_weight_grams : null,
+            'quantity' => (int) $feeding->quantity,
+            'notes' => $feeding->notes ?? '',
+        ];
+    }
+
+    public function cancelEditFeeding(): void
+    {
+        $this->resetFeedingForm();
     }
 
     public function deleteFeeding(int $feedingId, FeedingService $feedingService): void
@@ -119,6 +213,9 @@ class Profile extends Component
 
         $this->authorize('delete', $feeding);
         $feedingService->delete(auth()->user(), $feeding);
+        if ($this->editingFeedingId === $feedingId) {
+            $this->resetFeedingForm();
+        }
         session()->flash('success', 'Usunieto wpis karmienia.');
     }
 
@@ -130,9 +227,42 @@ class Profile extends Component
             'weightForm.notes' => ['nullable', 'string'],
         ]);
 
-        $weightService->create(auth()->user(), $this->animal, $data['weightForm']);
+        if ($this->editingWeightId) {
+            $weight = Weight::query()
+                ->ownedBy(auth()->id())
+                ->where('animal_id', $this->animal->id)
+                ->findOrFail($this->editingWeightId);
+
+            $this->authorize('update', $weight);
+            $weightService->update(auth()->user(), $weight, $data['weightForm']);
+            session()->flash('success', 'Wpis wazenia zostal zaktualizowany.');
+        } else {
+            $weightService->create(auth()->user(), $this->animal, $data['weightForm']);
+            session()->flash('success', 'Dodano wazenie.');
+        }
+
         $this->resetWeightForm();
-        session()->flash('success', 'Dodano wazenie.');
+    }
+
+    public function startEditWeight(int $weightId): void
+    {
+        $weight = Weight::query()
+            ->ownedBy(auth()->id())
+            ->where('animal_id', $this->animal->id)
+            ->findOrFail($weightId);
+
+        $this->authorize('update', $weight);
+        $this->editingWeightId = $weight->id;
+        $this->weightForm = [
+            'measured_at' => $weight->measured_at?->toDateString(),
+            'weight_grams' => $weight->weight_grams !== null ? (float) $weight->weight_grams : null,
+            'notes' => $weight->notes ?? '',
+        ];
+    }
+
+    public function cancelEditWeight(): void
+    {
+        $this->resetWeightForm();
     }
 
     public function deleteWeight(int $weightId, WeightService $weightService): void
@@ -144,6 +274,9 @@ class Profile extends Component
 
         $this->authorize('delete', $weight);
         $weightService->delete(auth()->user(), $weight);
+        if ($this->editingWeightId === $weightId) {
+            $this->resetWeightForm();
+        }
         session()->flash('success', 'Usunieto wpis wazenia.');
     }
 
@@ -155,9 +288,42 @@ class Profile extends Component
             'shedForm.notes' => ['nullable', 'string'],
         ]);
 
-        $shedService->create(auth()->user(), $this->animal, $data['shedForm']);
+        if ($this->editingShedId) {
+            $shed = Shed::query()
+                ->ownedBy(auth()->id())
+                ->where('animal_id', $this->animal->id)
+                ->findOrFail($this->editingShedId);
+
+            $this->authorize('update', $shed);
+            $shedService->update(auth()->user(), $shed, $data['shedForm']);
+            session()->flash('success', 'Wpis wylinki zostal zaktualizowany.');
+        } else {
+            $shedService->create(auth()->user(), $this->animal, $data['shedForm']);
+            session()->flash('success', 'Dodano wpis wylinki.');
+        }
+
         $this->resetShedForm();
-        session()->flash('success', 'Dodano wpis wylinki.');
+    }
+
+    public function startEditShed(int $shedId): void
+    {
+        $shed = Shed::query()
+            ->ownedBy(auth()->id())
+            ->where('animal_id', $this->animal->id)
+            ->findOrFail($shedId);
+
+        $this->authorize('update', $shed);
+        $this->editingShedId = $shed->id;
+        $this->shedForm = [
+            'shed_at' => $shed->shed_at?->toDateString(),
+            'quality' => $shed->quality ?? '',
+            'notes' => $shed->notes ?? '',
+        ];
+    }
+
+    public function cancelEditShed(): void
+    {
+        $this->resetShedForm();
     }
 
     public function deleteShed(int $shedId, ShedService $shedService): void
@@ -169,6 +335,9 @@ class Profile extends Component
 
         $this->authorize('delete', $shed);
         $shedService->delete(auth()->user(), $shed);
+        if ($this->editingShedId === $shedId) {
+            $this->resetShedForm();
+        }
         session()->flash('success', 'Usunieto wpis wylinki.');
     }
 
@@ -179,9 +348,41 @@ class Profile extends Component
             'noteForm.is_pinned' => ['nullable', 'boolean'],
         ]);
 
-        $noteService->create(auth()->user(), $this->animal, $data['noteForm']);
+        if ($this->editingNoteId) {
+            $note = Note::query()
+                ->ownedBy(auth()->id())
+                ->where('animal_id', $this->animal->id)
+                ->findOrFail($this->editingNoteId);
+
+            $this->authorize('update', $note);
+            $noteService->update(auth()->user(), $note, $data['noteForm']);
+            session()->flash('success', 'Notatka zostala zaktualizowana.');
+        } else {
+            $noteService->create(auth()->user(), $this->animal, $data['noteForm']);
+            session()->flash('success', 'Dodano notatke.');
+        }
+
         $this->resetNoteForm();
-        session()->flash('success', 'Dodano notatke.');
+    }
+
+    public function startEditNote(int $noteId): void
+    {
+        $note = Note::query()
+            ->ownedBy(auth()->id())
+            ->where('animal_id', $this->animal->id)
+            ->findOrFail($noteId);
+
+        $this->authorize('update', $note);
+        $this->editingNoteId = $note->id;
+        $this->noteForm = [
+            'body' => $note->body,
+            'is_pinned' => (bool) $note->is_pinned,
+        ];
+    }
+
+    public function cancelEditNote(): void
+    {
+        $this->resetNoteForm();
     }
 
     public function deleteNote(int $noteId, NoteService $noteService): void
@@ -193,6 +394,9 @@ class Profile extends Component
 
         $this->authorize('delete', $note);
         $noteService->delete(auth()->user(), $note);
+        if ($this->editingNoteId === $noteId) {
+            $this->resetNoteForm();
+        }
         session()->flash('success', 'Usunieto notatke.');
     }
 
@@ -228,6 +432,7 @@ class Profile extends Component
     protected function resetFeedingForm(): void
     {
         $defaultFeedId = Feed::query()->orderBy('id')->value('id');
+        $this->editingFeedingId = null;
 
         $this->feedingForm = [
             'fed_at' => now()->toDateString(),
@@ -240,6 +445,8 @@ class Profile extends Component
 
     protected function resetWeightForm(): void
     {
+        $this->editingWeightId = null;
+
         $this->weightForm = [
             'measured_at' => now()->toDateString(),
             'weight_grams' => null,
@@ -249,6 +456,8 @@ class Profile extends Component
 
     protected function resetShedForm(): void
     {
+        $this->editingShedId = null;
+
         $this->shedForm = [
             'shed_at' => now()->toDateString(),
             'quality' => '',
@@ -258,6 +467,8 @@ class Profile extends Component
 
     protected function resetNoteForm(): void
     {
+        $this->editingNoteId = null;
+
         $this->noteForm = [
             'body' => '',
             'is_pinned' => false,
@@ -266,8 +477,10 @@ class Profile extends Component
 
     protected function resetGenotypeForm(): void
     {
+        $this->editingGenotypeId = null;
+
         $this->genotypeForm = [
-            'genotype_id' => null,
+            'gene_name' => '',
             'type' => 'h',
         ];
     }

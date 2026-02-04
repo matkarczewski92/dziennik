@@ -49,5 +49,26 @@ class AnimalsOwnerScopeTest extends TestCase
             ->assertSee($myAnimal->name)
             ->assertDontSee($otherAnimal->name);
     }
-}
 
+    public function test_sidebar_tree_shows_only_owner_animals(): void
+    {
+        Role::findOrCreate('user');
+
+        $owner = User::factory()->create();
+        $owner->assignRole('user');
+
+        $other = User::factory()->create();
+        $other->assignRole('user');
+
+        $myAnimal = Animal::factory()->for($owner)->create(['name' => 'Moja Kobra']);
+        $otherAnimal = Animal::factory()->for($other)->create(['name' => 'Cudzy Python']);
+
+        $response = $this->actingAs($owner)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertSee('Zwierzeta');
+        $response->assertSee($myAnimal->name);
+        $response->assertDontSee($otherAnimal->name);
+        $response->assertSee(route('animals.show', $myAnimal), false);
+    }
+}

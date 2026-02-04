@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Animal;
 use App\Models\Photo;
 use App\Models\User;
+use App\Services\Animal\AnimalEventProjector;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +14,11 @@ use Intervention\Image\Laravel\Facades\Image;
 
 class PhotoService
 {
+    public function __construct(
+        protected AnimalEventProjector $eventProjector,
+    ) {
+    }
+
     public function store(User $user, Animal $animal, UploadedFile $file, array $data = []): Photo
     {
         $this->ensureOwnership($user, $animal);
@@ -24,7 +30,7 @@ class PhotoService
         $path = "animals/{$animal->id}/".Str::uuid().'.webp';
         Storage::disk('public')->put($path, (string) $encoded);
 
-        return Photo::query()->create([
+        $photo = Photo::query()->create([
             'user_id' => $user->id,
             'animal_id' => $animal->id,
             'path' => $path,
@@ -33,6 +39,10 @@ class PhotoService
             'taken_at' => $data['taken_at'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);
+
+        $this->eventProjector->projectPhoto($photo);
+
+        return $photo;
     }
 
     public function delete(User $user, Photo $photo): void
@@ -41,8 +51,11 @@ class PhotoService
             throw new AuthorizationException();
         }
 
-        Storage::disk('public')->delete($photo->path);
+        if (! Str::startsWith($photo->path, ['http://', 'https://'])) {
+            Storage::disk('public')->delete($photo->path);
+        }
         $photo->delete();
+        $this->eventProjector->removePhoto($photo);
     }
 
     protected function ensureOwnership(User $user, Animal $animal): void
@@ -52,4 +65,3 @@ class PhotoService
         }
     }
 }
-

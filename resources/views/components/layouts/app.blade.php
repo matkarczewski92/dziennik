@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pl">
+<html lang="pl" data-bs-theme="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,22 +10,62 @@
 </head>
 <body class="bg-body-tertiary">
     <div class="app-shell">
-        <aside class="app-sidebar">
-            <div class="sidebar-brand">{{ config('app.name') }}</div>
-            <nav class="nav flex-column gap-1">
-                <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
-                <a class="nav-link {{ request()->routeIs('animals.*') ? 'active' : '' }}" href="{{ route('animals.index') }}">Zwierzeta</a>
-                @if($isAdmin ?? false)
-                    <div class="nav-separator mt-3 mb-1">Administrator</div>
-                    <a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Uzytkownicy</a>
-                    <a class="nav-link {{ request()->routeIs('admin.system-config') ? 'active' : '' }}" href="{{ route('admin.system-config') }}">Konfiguracja</a>
-                @endif
-            </nav>
+        <aside class="app-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebarNav" aria-labelledby="sidebarNavLabel">
+            <div class="offcanvas-header d-lg-none">
+                <h5 class="offcanvas-title" id="sidebarNavLabel">Menu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#sidebarNav" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-0">
+                <div class="sidebar-content">
+                    <div class="sidebar-brand-wrap">
+                        <img
+                            src="https://makssnake.pl/images/landing/logo_white.png"
+                            alt="MaksSnake logo"
+                            class="sidebar-logo"
+                            width="100"
+                            height="100"
+                            loading="lazy"
+                        >
+                        <div class="sidebar-brand">Dziennik hodowlany</div>
+                    </div>
+                    <nav class="nav flex-column gap-1">
+                        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
+                        <a class="nav-link {{ request()->routeIs('animals.*') ? 'active' : '' }}" href="{{ route('animals.index') }}">Zwierzeta</a>
+                        <div class="sidebar-shortcuts">
+                            @forelse(($sidebarAnimals ?? collect()) as $sidebarAnimal)
+                                <a
+                                    class="nav-link sidebar-shortcut-link {{ request()->routeIs('animals.show') && (int) (request()->route('animal')?->id ?? 0) === $sidebarAnimal->id ? 'active' : '' }}"
+                                    href="{{ route('animals.show', $sidebarAnimal) }}"
+                                >
+                                    {{ $sidebarAnimal->name }}
+                                </a>
+                            @empty
+                                <div class="sidebar-shortcuts-empty">Brak zwierzat</div>
+                            @endforelse
+                        </div>
+                        <a class="nav-link {{ request()->routeIs('account.settings') ? 'active' : '' }}" href="{{ route('account.settings') }}">Konto</a>
+                        @if($isAdmin ?? false)
+                            <div class="nav-separator mt-3 mb-1">Administrator</div>
+                            <a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Uzytkownicy</a>
+                            <a class="nav-link {{ request()->routeIs('admin.system-config') ? 'active' : '' }}" href="{{ route('admin.system-config') }}">Konfiguracja</a>
+                        @endif
+                    </nav>
+                </div>
+            </div>
         </aside>
 
         <main class="app-main">
             <header class="app-topbar">
                 <div class="d-flex align-items-center gap-2">
+                    <button
+                        class="btn btn-outline-secondary btn-sm d-lg-none"
+                        type="button"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#sidebarNav"
+                        aria-controls="sidebarNav"
+                    >
+                        Menu
+                    </button>
                     <strong>{{ auth()->user()?->name }}</strong>
                 </div>
                 <form method="POST" action="{{ route('logout') }}">

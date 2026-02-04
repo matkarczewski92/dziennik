@@ -71,6 +71,8 @@ Mozesz nadpisac admina przez env:
 php artisan test
 ```
 
+Testy sa odseparowane od glownej bazy i korzystaja z `m2531_dziennik_test` (patrz `phpunit.xml`).
+
 Testy MVP obejmuja:
 - auth (rejestracja/logowanie)
 - owner scope dla animals

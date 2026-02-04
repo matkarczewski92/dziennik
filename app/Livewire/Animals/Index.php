@@ -4,7 +4,6 @@ namespace App\Livewire\Animals;
 
 use App\Exceptions\HodowlaApiException;
 use App\Models\Animal;
-use App\Models\AnimalGenotypeCategory;
 use App\Models\AnimalSpecies;
 use App\Services\AnimalImportService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -33,8 +32,6 @@ class Index extends Component
 
     public ?int $species_id = null;
 
-    public array $selectedMorphIds = [];
-
     public string $sex = 'unknown';
 
     public ?string $hatch_date = null;
@@ -54,8 +51,6 @@ class Index extends Component
         return [
             'name' => ['required', 'string', 'max:255'],
             'species_id' => ['nullable', 'integer', 'exists:animal_species,id'],
-            'selectedMorphIds' => ['array'],
-            'selectedMorphIds.*' => ['integer', 'exists:animal_genotype_category,id'],
             'sex' => ['required', 'in:male,female,unknown'],
             'hatch_date' => ['nullable', 'date'],
             'acquired_at' => ['nullable', 'date'],
@@ -105,15 +100,6 @@ class Index extends Component
         $this->editingId = $animal->id;
         $this->name = $animal->name;
         $this->species_id = $animal->species_id;
-        $morphNames = collect(explode(',', (string) $animal->morph))
-            ->map(fn (string $value): string => trim($value))
-            ->filter()
-            ->values();
-        $this->selectedMorphIds = AnimalGenotypeCategory::query()
-            ->whereIn('name', $morphNames)
-            ->pluck('id')
-            ->map(fn ($id): int => (int) $id)
-            ->all();
         $this->sex = $animal->sex;
         $this->hatch_date = $animal->hatch_date?->toDateString();
         $this->acquired_at = $animal->acquired_at?->toDateString();
@@ -126,12 +112,6 @@ class Index extends Component
     public function saveAnimal(): void
     {
         $validated = $this->validate();
-        $morphNames = AnimalGenotypeCategory::query()
-            ->whereIn('id', $validated['selectedMorphIds'] ?? [])
-            ->orderBy('name')
-            ->pluck('name')
-            ->all();
-        $validated['morph'] = ! empty($morphNames) ? implode(', ', $morphNames) : null;
 
         if ($this->editingId) {
             $animal = Animal::query()->ownedBy(auth()->id())->findOrFail($this->editingId);
@@ -145,6 +125,9 @@ class Index extends Component
                 'user_id' => auth()->id(),
             ]);
             session()->flash('success', 'Dodano nowe zwierze.');
+
+            $this->redirectRoute('animals.index', navigate: false);
+            return;
         }
 
         $this->showAnimalModal = false;
@@ -189,8 +172,9 @@ class Index extends Component
 
         try {
             $animal = $importService->importBySecretTag(auth()->user(), trim($this->importSecretTag));
-            $this->showImportModal = false;
             session()->flash('success', "Import zakonczony: {$animal->name}");
+            $this->redirectRoute('animals.index', navigate: false);
+            return;
         } catch (HodowlaApiException $exception) {
             $this->addError('importSecretTag', $exception->getMessage());
         }
@@ -201,7 +185,6 @@ class Index extends Component
         $this->resetValidation();
         $this->name = '';
         $this->species_id = null;
-        $this->selectedMorphIds = [];
         $this->sex = 'unknown';
         $this->hatch_date = null;
         $this->acquired_at = null;
@@ -215,7 +198,6 @@ class Index extends Component
         return view('livewire.animals.index', [
             'animals' => $this->animals,
             'speciesOptions' => AnimalSpecies::query()->orderBy('name')->get(),
-            'morphOptions' => AnimalGenotypeCategory::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 }
