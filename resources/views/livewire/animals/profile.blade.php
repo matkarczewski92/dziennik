@@ -89,15 +89,18 @@
                     <div class="card-body">
                         <h2 class="h6 mb-3">{{ $editingFeedingId ? 'Edytuj karmienie' : 'Dodaj karmienie' }}</h2>
                         <form wire:submit="addFeeding" class="vstack gap-2">
+                            <label class="form-label small text-muted mb-0">Data karmienia</label>
                             <input type="date" class="form-control @error('feedingForm.fed_at') is-invalid @enderror" wire:model="feedingForm.fed_at">
+                            <label class="form-label small text-muted mb-0">Rodzaj karmy</label>
                             <select class="form-select @error('feedingForm.feed_id') is-invalid @enderror" wire:model="feedingForm.feed_id">
                                 <option value="">-- wybierz rodzaj karmy --</option>
                                 @foreach($feedOptions as $feedOption)
                                     <option value="{{ $feedOption->id }}">{{ $feedOption->name }}</option>
                                 @endforeach
                             </select>
-                            <input type="number" step="0.01" class="form-control @error('feedingForm.prey_weight_grams') is-invalid @enderror" wire:model="feedingForm.prey_weight_grams" placeholder="Waga pokarmu (g)">
+                            <label class="form-label small text-muted mb-0">Ilosc</label>
                             <input type="number" class="form-control @error('feedingForm.quantity') is-invalid @enderror" wire:model="feedingForm.quantity" placeholder="Ilosc">
+                            <label class="form-label small text-muted mb-0">Notatka</label>
                             <textarea class="form-control @error('feedingForm.notes') is-invalid @enderror" rows="3" wire:model="feedingForm.notes" placeholder="Notatka"></textarea>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-primary" type="submit">{{ $editingFeedingId ? 'Zapisz zmiany' : 'Zapisz karmienie' }}</button>
@@ -117,7 +120,7 @@
                             <div class="d-flex justify-content-between border-bottom py-2">
                                 <div>
                                     <div>{{ $feeding->fed_at?->format('Y-m-d') }} - {{ $feeding->feed?->name ?? $feeding->prey }}</div>
-                                    <div class="small text-muted">{{ $feeding->prey_weight_grams ? number_format($feeding->prey_weight_grams, 2, ',', ' ') . ' g' : '-' }} | ilosc: {{ $feeding->quantity }}</div>
+                                    <div class="small text-muted">ilosc: {{ $feeding->quantity }}</div>
                                 </div>
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-sm btn-outline-secondary" wire:click="startEditFeeding({{ $feeding->id }})">Edytuj</button>
@@ -171,6 +174,9 @@
                         @empty
                             <p class="text-muted mb-0">Brak wpisow wazen.</p>
                         @endforelse
+                        @if($weights instanceof \Illuminate\Contracts\Pagination\Paginator && $weights->hasPages())
+                            <div class="mt-3">{{ $weights->links() }}</div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -215,6 +221,9 @@
                         @empty
                             <p class="text-muted mb-0">Brak wpisow wylinek.</p>
                         @endforelse
+                        @if($sheds instanceof \Illuminate\Contracts\Pagination\Paginator && $sheds->hasPages())
+                            <div class="mt-3">{{ $sheds->links() }}</div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -288,7 +297,7 @@
                             x-on:livewire-upload-progress="progress = $event.detail.progress"
                         >
                             <input type="file" class="form-control @error('photoUpload') is-invalid @enderror" wire:model="photoUpload" accept="image/*">
-                            <small class="text-muted">Max 25MB. Zdjecie zostanie przeskalowane do max 1920x1080 i zapisane jako WebP.</small>
+                            <small class="text-muted">Max 25MB. Zdjecie zostanie przeskalowane do max 1920x1080 i zapisane w formacie JPG/PNG/WebP (bez oryginalu).</small>
                             <input type="date" class="form-control @error('photo_taken_at') is-invalid @enderror" wire:model="photo_taken_at">
                             <textarea class="form-control @error('photo_notes') is-invalid @enderror" rows="3" wire:model="photo_notes" placeholder="Notatka do zdjecia"></textarea>
                             <div class="progress" x-show="isUploading">
@@ -307,8 +316,15 @@
                             @forelse($photos as $photo)
                                 <div class="col-6 col-md-4">
                                     <div class="border rounded overflow-hidden">
-                                        <img src="{{ $photo->url }}" alt="Zdjecie {{ $animal->name }}" class="img-fluid">
+                                        <button
+                                            type="button"
+                                            class="btn p-0 border-0 w-100 text-start"
+                                            wire:click="openPhotoModal({{ $photo->id }})"
+                                        >
+                                            <img src="{{ $photo->url }}" alt="Zdjecie {{ $animal->name }}" class="img-fluid">
+                                        </button>
                                         <div class="p-2">
+                                            <div class="small text-muted">Dodano: {{ $photo->created_at?->format('Y-m-d H:i') ?: '-' }}</div>
                                             <div class="small text-muted mb-2">{{ $photo->size_kb }} KB</div>
                                             <button class="btn btn-sm btn-outline-danger w-100" wire:click="deletePhoto({{ $photo->id }})">Usun</button>
                                         </div>
@@ -324,5 +340,28 @@
                 </div>
             </div>
         </div>
+
+        @if($showPhotoModal && $activePhoto)
+            <div class="livewire-modal-backdrop">
+                <div class="livewire-modal">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h3 class="h6 mb-0">Podglad zdjecia</h3>
+                        <button class="btn-close" type="button" wire:click="closePhotoModal"></button>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                        <button class="btn btn-outline-secondary btn-sm" wire:click="showPreviousPhoto">&larr; Poprzednie</button>
+                        <button class="btn btn-outline-secondary btn-sm" wire:click="showNextPhoto">Nastepne &rarr;</button>
+                    </div>
+
+                    <div class="text-center mb-2">
+                        <img src="{{ $activePhoto->url }}" alt="Podglad zdjecia {{ $animal->name }}" class="img-fluid rounded">
+                    </div>
+                    <div class="small text-muted">
+                        Data dodania: {{ $activePhoto->created_at?->format('Y-m-d H:i') ?: '-' }}
+                    </div>
+                </div>
+            </div>
+        @endif
     @endif
 </div>

@@ -9,6 +9,14 @@
 </head>
 <body class="guest-body">
     <div class="guest-card shadow-sm">
+        <img
+            src="https://makssnake.pl/images/landing/logo_white.png"
+            alt="MaksSnake logo"
+            width="240"
+            height="300"
+            class="guest-logo"
+            loading="lazy"
+        >
         <h1 class="h4 mb-4 text-center">{{ config('app.name') }}</h1>
         {{ $slot }}
     </div>

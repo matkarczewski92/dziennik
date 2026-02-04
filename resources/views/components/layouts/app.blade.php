@@ -35,7 +35,7 @@
                             @forelse(($sidebarAnimals ?? collect()) as $sidebarAnimal)
                                 <a
                                     class="nav-link sidebar-shortcut-link {{ request()->routeIs('animals.show') && (int) (request()->route('animal')?->id ?? 0) === $sidebarAnimal->id ? 'active' : '' }}"
-                                    href="{{ route('animals.show', $sidebarAnimal) }}"
+                                    href="{{ route('animals.show', $sidebarAnimal->id) }}"
                                 >
                                     {{ $sidebarAnimal->name }}
                                 </a>
@@ -44,6 +44,8 @@
                             @endforelse
                         </div>
                         <a class="nav-link {{ request()->routeIs('account.settings') ? 'active' : '' }}" href="{{ route('account.settings') }}">Konto</a>
+                        <hr class="my-2 border-secondary-subtle">
+                        <a class="nav-link {{ request()->routeIs('offers.current') ? 'active' : '' }}" href="{{ route('offers.current') }}">Aktualna oferta</a>
                         @if($isAdmin ?? false)
                             <div class="nav-separator mt-3 mb-1">Administrator</div>
                             <a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Uzytkownicy</a>

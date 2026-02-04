@@ -1,4 +1,3 @@
 <x-layouts.app>
-    <livewire:animals.profile :animal="$animal" />
+    <livewire:animals.animal-profile-page :animal="$animal" />
 </x-layouts.app>
-

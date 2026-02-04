@@ -3,10 +3,10 @@
 namespace App\Services\Animal;
 
 use App\Models\Animal;
+use App\Models\AnimalOffer;
 use App\Models\Feeding;
 use App\Models\Shed;
 use App\Services\Animal\DTO\AnimalProfileDTO;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AnimalProfileQueryService
@@ -19,7 +19,7 @@ class AnimalProfileQueryService
 
     public function build(Animal $animal, int $shedsPage = 1, int $shedsPerPage = 10): AnimalProfileDTO
     {
-        $animal->loadMissing(['species', 'animalGenotypes.genotypeCategory']);
+        $animal->loadMissing(['species', 'animalGenotypes.genotypeCategory', 'photos']);
 
         $feedings = Feeding::query()
             ->where('animal_id', $animal->id)
@@ -42,23 +42,26 @@ class AnimalProfileQueryService
         $genotypeChips = $animal->animalGenotypes
             ->map(fn ($item): array => [
                 'id' => $item->id,
-                'name' => (string) ($item->genotypeCategory?->name ?? 'Gen'),
-                'code' => (string) ($item->genotypeCategory?->gene_code ?? ''),
+                'name' => $this->normalizeUtf8((string) ($item->genotypeCategory?->name ?? 'Gen')),
+                'code' => $this->normalizeUtf8((string) ($item->genotypeCategory?->gene_code ?? '')),
                 'type' => (string) $item->type,
             ])->values()->all();
+
+        $coverPhoto = $animal->photos->sortByDesc('id')->first();
 
         return new AnimalProfileDTO(
             identity: [
                 'id' => $animal->id,
-                'name' => $animal->name,
-                'species' => $animal->species?->name,
+                'name' => $this->normalizeUtf8((string) $animal->name),
+                'species' => $this->normalizeUtf8((string) ($animal->species?->name ?? '')),
                 'sex' => $animal->sex,
                 'hatch_date' => optional($animal->hatch_date)->toDateString(),
                 'acquired_at' => optional($animal->acquired_at)->toDateString(),
                 'feeding_interval_days' => $animal->feeding_interval_days,
                 'current_weight_grams' => $animal->current_weight_grams,
-                'secret_tag' => $animal->secret_tag,
-                'notes' => $animal->notes,
+                'secret_tag' => $this->normalizeUtf8((string) ($animal->secret_tag ?? '')),
+                'notes' => $this->normalizeUtf8((string) ($animal->notes ?? '')),
+                'cover_photo_url' => $coverPhoto?->url,
             ],
             genotypeChips: $genotypeChips,
             feedingsByYear: $feedingsByYear,
@@ -75,7 +78,7 @@ class AnimalProfileQueryService
             return null;
         }
 
-        $offer = DB::table('animal_offers')
+        $offer = AnimalOffer::query()
             ->where('animal_id', $animal->id)
             ->orderByDesc('id')
             ->first();
@@ -85,12 +88,31 @@ class AnimalProfileQueryService
         }
 
         return [
-            'id' => $offer->id ?? null,
-            'status' => $offer->status ?? null,
-            'price' => $offer->price ?? null,
-            'currency' => $offer->currency ?? null,
-            'title' => $offer->title ?? null,
-            'updated_at' => $offer->updated_at ?? null,
+            'id' => $offer->id,
+            'status' => $offer->sold_date ? 'sold' : 'available',
+            'price' => $offer->price,
+            'sold_date' => optional($offer->sold_date)->toDateString(),
+            'updated_at' => optional($offer->updated_at)?->toDateTimeString(),
         ];
+    }
+
+    protected function normalizeUtf8(string $value): string
+    {
+        if ($value === '') {
+            return $value;
+        }
+
+        if (function_exists('mb_check_encoding') && mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+
+        if (function_exists('iconv')) {
+            $converted = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+            if (is_string($converted) && $converted !== '') {
+                return $converted;
+            }
+        }
+
+        return preg_replace('/[^\x09\x0A\x0D\x20-\x7E]/', '', $value) ?: '';
     }
 }

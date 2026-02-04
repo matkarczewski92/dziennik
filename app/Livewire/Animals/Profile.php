@@ -21,11 +21,13 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class Profile extends Component
 {
     use AuthorizesRequests;
     use WithFileUploads;
+    use WithPagination;
 
     public Animal $animal;
 
@@ -56,6 +58,10 @@ class Profile extends Component
     public ?string $photo_taken_at = null;
 
     public ?string $photo_notes = null;
+
+    public bool $showPhotoModal = false;
+
+    public ?int $activePhotoId = null;
 
     public function mount(Animal $animal): void
     {
@@ -159,10 +165,14 @@ class Profile extends Component
         $data = $this->validate([
             'feedingForm.fed_at' => ['required', 'date'],
             'feedingForm.feed_id' => ['required', 'integer', 'exists:feeds,id'],
-            'feedingForm.prey_weight_grams' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'feedingForm.quantity' => ['required', 'integer', 'min:1', 'max:50'],
             'feedingForm.notes' => ['nullable', 'string'],
         ]);
+
+        $payload = [
+            ...$data['feedingForm'],
+            'prey_weight_grams' => null,
+        ];
 
         if ($this->editingFeedingId) {
             $feeding = Feeding::query()
@@ -171,10 +181,10 @@ class Profile extends Component
                 ->findOrFail($this->editingFeedingId);
 
             $this->authorize('update', $feeding);
-            $feedingService->update(auth()->user(), $feeding, $data['feedingForm']);
+            $feedingService->update(auth()->user(), $feeding, $payload);
             session()->flash('success', 'Wpis karmienia zostal zaktualizowany.');
         } else {
-            $feedingService->create(auth()->user(), $this->animal, $data['feedingForm']);
+            $feedingService->create(auth()->user(), $this->animal, $payload);
             session()->flash('success', 'Dodano karmienie.');
         }
 
@@ -193,7 +203,6 @@ class Profile extends Component
         $this->feedingForm = [
             'fed_at' => $feeding->fed_at?->toDateString(),
             'feed_id' => $feeding->feed_id,
-            'prey_weight_grams' => $feeding->prey_weight_grams !== null ? (float) $feeding->prey_weight_grams : null,
             'quantity' => (int) $feeding->quantity,
             'notes' => $feeding->notes ?? '',
         ];
@@ -426,7 +435,77 @@ class Profile extends Component
 
         $this->authorize('delete', $photo);
         $photoService->delete(auth()->user(), $photo);
+        if ($this->activePhotoId === $photoId) {
+            $this->activePhotoId = null;
+            $this->showPhotoModal = false;
+        }
         session()->flash('success', 'Zdjecie zostalo usuniete.');
+    }
+
+    public function openPhotoModal(int $photoId): void
+    {
+        $exists = Photo::query()
+            ->ownedBy(auth()->id())
+            ->where('animal_id', $this->animal->id)
+            ->whereKey($photoId)
+            ->exists();
+
+        if (! $exists) {
+            return;
+        }
+
+        $this->activePhotoId = $photoId;
+        $this->showPhotoModal = true;
+    }
+
+    public function closePhotoModal(): void
+    {
+        $this->showPhotoModal = false;
+        $this->activePhotoId = null;
+    }
+
+    public function showNextPhoto(): void
+    {
+        $ids = $this->photoIds();
+        if ($ids === [] || ! $this->activePhotoId) {
+            return;
+        }
+
+        $currentIndex = array_search($this->activePhotoId, $ids, true);
+        if ($currentIndex === false) {
+            $this->activePhotoId = $ids[0];
+            return;
+        }
+
+        $nextIndex = ($currentIndex + 1) % count($ids);
+        $this->activePhotoId = $ids[$nextIndex];
+    }
+
+    public function showPreviousPhoto(): void
+    {
+        $ids = $this->photoIds();
+        if ($ids === [] || ! $this->activePhotoId) {
+            return;
+        }
+
+        $currentIndex = array_search($this->activePhotoId, $ids, true);
+        if ($currentIndex === false) {
+            $this->activePhotoId = $ids[0];
+            return;
+        }
+
+        $previousIndex = ($currentIndex - 1 + count($ids)) % count($ids);
+        $this->activePhotoId = $ids[$previousIndex];
+    }
+
+    protected function photoIds(): array
+    {
+        return Photo::query()
+            ->ownedBy(auth()->id())
+            ->where('animal_id', $this->animal->id)
+            ->latest()
+            ->pluck('id')
+            ->all();
     }
 
     protected function resetFeedingForm(): void
@@ -437,7 +516,6 @@ class Profile extends Component
         $this->feedingForm = [
             'fed_at' => now()->toDateString(),
             'feed_id' => $defaultFeedId ? (int) $defaultFeedId : null,
-            'prey_weight_grams' => null,
             'quantity' => 1,
             'notes' => '',
         ];
@@ -499,17 +577,36 @@ class Profile extends Component
                 ->with('genotypeCategory')
                 ->orderByDesc('id')
                 ->get(),
-            'feedOptions' => Feed::query()->orderBy('name')->get(),
+            'feedOptions' => Feed::query()->orderBy('id')->get(),
             'feedings' => Feeding::query()
                 ->ownedBy(auth()->id())
                 ->where('animal_id', $this->animal->id)
                 ->with('feed')
                 ->latest('fed_at')
                 ->get(),
-            'weights' => Weight::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest('measured_at')->get(),
-            'sheds' => Shed::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest('shed_at')->get(),
-            'notes' => Note::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest()->get(),
+            'weights' => Weight::query()
+                ->ownedBy(auth()->id())
+                ->where('animal_id', $this->animal->id)
+                ->latest('measured_at')
+                ->paginate(10, ['*'], 'weightsPage'),
+            'sheds' => Shed::query()
+                ->ownedBy(auth()->id())
+                ->where('animal_id', $this->animal->id)
+                ->latest('shed_at')
+                ->paginate(10, ['*'], 'shedsPage'),
+            'notes' => Note::query()
+                ->ownedBy(auth()->id())
+                ->where('animal_id', $this->animal->id)
+                ->orderByDesc('is_pinned')
+                ->latest()
+                ->get(),
             'photos' => Photo::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest()->get(),
+            'activePhoto' => $this->activePhotoId
+                ? Photo::query()
+                    ->ownedBy(auth()->id())
+                    ->where('animal_id', $this->animal->id)
+                    ->find($this->activePhotoId)
+                : null,
         ]);
     }
 }

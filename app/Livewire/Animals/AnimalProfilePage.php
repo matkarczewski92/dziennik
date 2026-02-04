@@ -7,19 +7,17 @@ use App\Services\Animal\AnimalProfileQueryService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\On;
 use Livewire\Component;
-use Livewire\WithPagination;
 
 class AnimalProfilePage extends Component
 {
     use AuthorizesRequests;
-    use WithPagination;
 
     public Animal $animal;
 
     #[On('animal-profile-refresh')]
     public function refreshProfile(): void
     {
-        // Listener used to force rerender after nested component updates.
+        $this->animal = $this->animal->refresh();
     }
 
     public function mount(Animal $animal): void
@@ -34,11 +32,7 @@ class AnimalProfilePage extends Component
             ->ownedBy(auth()->id())
             ->findOrFail($this->animal->id);
 
-        $profile = $queryService->build(
-            animal: $animal,
-            shedsPage: $this->getPage('shedsPage'),
-            shedsPerPage: 8,
-        );
+        $profile = $queryService->build(animal: $animal);
 
         return view('livewire.animals.animal-profile-page', [
             'animal' => $animal,

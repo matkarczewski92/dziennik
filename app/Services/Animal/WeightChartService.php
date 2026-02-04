@@ -3,16 +3,20 @@
 namespace App\Services\Animal;
 
 use App\Models\Animal;
+use App\Models\Feeding;
+use App\Models\Weight;
 
 class WeightChartService
 {
     public function buildDataset(Animal $animal): array
     {
-        $weights = $animal->weights()
+        $weights = Weight::query()
+            ->where('animal_id', $animal->id)
             ->orderBy('measured_at')
             ->get(['measured_at', 'weight_grams']);
 
-        $feedings = $animal->feedings()
+        $feedings = Feeding::query()
+            ->where('animal_id', $animal->id)
             ->with('feed')
             ->orderBy('fed_at')
             ->get(['feedings.id', 'feedings.fed_at', 'feedings.prey_weight_grams', 'feedings.quantity', 'feedings.feed_id']);
@@ -31,7 +35,7 @@ class WeightChartService
                 ? (float) $feeding->prey_weight_grams
                 : (($feeding->feed?->amount !== null ? (float) $feeding->feed->amount : null));
 
-            if ($derivedSize === null) {
+            if ($derivedSize === null || $derivedSize <= 0) {
                 continue;
             }
 

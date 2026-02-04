@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ImpersonationController;
 use App\Models\Animal;
+use App\Services\CurrentOffersApiService;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -18,11 +19,37 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware(['auth', 'not_blocked'])->group(function (): void {
     Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard');
     Route::get('/account', fn () => view('account.settings'))->name('account.settings');
+    Route::get('/aktualna-oferta', function (CurrentOffersApiService $offersApiService) {
+        $errorMessage = null;
+        $offersByType = [];
+
+        try {
+            $offers = collect($offersApiService->fetchCurrentOffers())
+                ->values()
+                ->all();
+
+            $offersByType = collect($offers)
+                ->groupBy(static fn (array $offer): string => (string) ($offer['type_name'] ?? 'Pozostale'))
+                ->sortKeys()
+                ->map(static fn ($group): array => $group->values()->all())
+                ->all();
+        } catch (\Throwable $exception) {
+            $errorMessage = $exception->getMessage();
+        }
+
+        return view('offers.current', [
+            'errorMessage' => $errorMessage,
+            'offersByType' => $offersByType,
+        ]);
+    })->name('offers.current');
 
     Route::get('/animals', fn () => view('animals.index'))->name('animals.index');
     Route::get('/animals/{animal}', function (Animal $animal) {
         return view('animals.show', compact('animal'));
     })->can('view', 'animal')->name('animals.show');
+    Route::get('/animals/{animal}/legacy', function (Animal $animal) {
+        return view('animals.show-legacy', compact('animal'));
+    })->can('view', 'animal')->name('animals.show.legacy');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::post('/impersonation/leave', [ImpersonationController::class, 'stop'])->name('impersonation.leave');

@@ -77,4 +77,5 @@ class DashboardService
             })
             ->values();
     }
+
 }
