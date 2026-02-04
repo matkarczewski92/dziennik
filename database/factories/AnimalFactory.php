@@ -20,7 +20,7 @@ class AnimalFactory extends Factory
         return [
             'user_id' => User::factory(),
             'name' => fake()->firstName(),
-            'species' => fake()->randomElement(['Python regius', 'Boa constrictor', 'Morelia spilota']),
+            'species_id' => null,
             'morph' => fake()->randomElement(['Normal', 'Albino', 'Piebald', 'Mojave']),
             'sex' => fake()->randomElement(['male', 'female', 'unknown']),
             'hatch_date' => fake()->date(),

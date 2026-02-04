@@ -63,7 +63,7 @@
                                 @forelse($weightReminders as $animal)
                                     <tr>
                                         <td><a href="{{ route('animals.show', $animal->id) }}">{{ $animal->name }}</a></td>
-                                        <td>{{ $animal->species ?: '-' }}</td>
+                                        <td>{{ $animal->species?->name ?: '-' }}</td>
                                         <td>{{ $animal->current_weight_grams ? number_format($animal->current_weight_grams, 2, ',', ' ') . ' g' : 'brak danych' }}</td>
                                     </tr>
                                 @empty

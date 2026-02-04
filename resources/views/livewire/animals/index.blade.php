@@ -25,7 +25,7 @@
                             @endif
                         </div>
                         <div class="text-muted small mb-3">
-                            {{ $animal->species ?: 'brak gatunku' }} | {{ $animal->morph ?: 'brak morph' }}
+                            {{ $animal->species?->name ?: 'brak gatunku' }} | {{ $animal->morph ?: 'brak morph' }}
                         </div>
                         <div class="small mb-3">Interwal karmienia: {{ $animal->feeding_interval_days }} dni</div>
                         <div class="mt-auto d-flex flex-wrap gap-2">
@@ -65,8 +65,13 @@
                     <div class="row g-2">
                         <div class="col-12 col-md-6">
                             <label class="form-label">Gatunek</label>
-                            <input type="text" class="form-control @error('species') is-invalid @enderror" wire:model="species">
-                            @error('species') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <select class="form-select @error('species_id') is-invalid @enderror" wire:model="species_id">
+                                <option value="">-- wybierz gatunek --</option>
+                                @foreach($speciesOptions as $speciesOption)
+                                    <option value="{{ $speciesOption->id }}">{{ $speciesOption->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('species_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label">Morph</label>

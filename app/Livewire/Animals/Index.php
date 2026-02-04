@@ -4,6 +4,7 @@ namespace App\Livewire\Animals;
 
 use App\Exceptions\HodowlaApiException;
 use App\Models\Animal;
+use App\Models\AnimalSpecies;
 use App\Services\AnimalImportService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Computed;
@@ -29,7 +30,7 @@ class Index extends Component
 
     public string $name = '';
 
-    public ?string $species = null;
+    public ?int $species_id = null;
 
     public ?string $morph = null;
 
@@ -51,7 +52,7 @@ class Index extends Component
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'species' => ['nullable', 'string', 'max:255'],
+            'species_id' => ['nullable', 'integer', 'exists:animal_species,id'],
             'morph' => ['nullable', 'string', 'max:255'],
             'sex' => ['required', 'in:male,female,unknown'],
             'hatch_date' => ['nullable', 'date'],
@@ -71,13 +72,16 @@ class Index extends Component
     public function animals()
     {
         return Animal::query()
+            ->with('species')
             ->ownedBy(auth()->id())
             ->when($this->search !== '', function ($query): void {
                 $query->where(function ($q): void {
                     $q->where('name', 'like', '%'.$this->search.'%')
-                        ->orWhere('species', 'like', '%'.$this->search.'%')
                         ->orWhere('morph', 'like', '%'.$this->search.'%')
-                        ->orWhere('secret_tag', 'like', '%'.$this->search.'%');
+                        ->orWhere('secret_tag', 'like', '%'.$this->search.'%')
+                        ->orWhereHas('species', function ($speciesQuery): void {
+                            $speciesQuery->where('name', 'like', '%'.$this->search.'%');
+                        });
                 });
             })
             ->latest()
@@ -98,7 +102,7 @@ class Index extends Component
 
         $this->editingId = $animal->id;
         $this->name = $animal->name;
-        $this->species = $animal->species;
+        $this->species_id = $animal->species_id;
         $this->morph = $animal->morph;
         $this->sex = $animal->sex;
         $this->hatch_date = $animal->hatch_date?->toDateString();
@@ -180,7 +184,7 @@ class Index extends Component
     {
         $this->resetValidation();
         $this->name = '';
-        $this->species = null;
+        $this->species_id = null;
         $this->morph = null;
         $this->sex = 'unknown';
         $this->hatch_date = null;
@@ -194,6 +198,7 @@ class Index extends Component
     {
         return view('livewire.animals.index', [
             'animals' => $this->animals,
+            'speciesOptions' => AnimalSpecies::query()->orderBy('name')->get(),
         ]);
     }
 }

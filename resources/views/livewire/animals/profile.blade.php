@@ -4,7 +4,7 @@
             <div class="d-flex flex-wrap justify-content-between gap-2 align-items-center">
                 <div>
                     <h1 class="h4 mb-1">{{ $animal->name }}</h1>
-                    <div class="text-muted small">{{ $animal->species ?: 'brak gatunku' }} | {{ $animal->morph ?: 'brak morph' }}</div>
+                    <div class="text-muted small">{{ $animal->species?->name ?: 'brak gatunku' }} | {{ $animal->morph ?: 'brak morph' }}</div>
                 </div>
                 <a href="{{ route('animals.index') }}" class="btn btn-outline-secondary btn-sm">Powrot do listy</a>
             </div>
@@ -12,12 +12,61 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2 mb-3">
+        <button class="btn btn-sm {{ $activeTab === 'genetics' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('genetics')">Genetyka</button>
         <button class="btn btn-sm {{ $activeTab === 'feedings' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('feedings')">Karmienia</button>
         <button class="btn btn-sm {{ $activeTab === 'weights' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('weights')">Wazenia</button>
         <button class="btn btn-sm {{ $activeTab === 'sheds' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('sheds')">Wylinki</button>
         <button class="btn btn-sm {{ $activeTab === 'notes' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('notes')">Notatnik</button>
         <button class="btn btn-sm {{ $activeTab === 'photos' ? 'btn-primary' : 'btn-outline-primary' }}" wire:click="setTab('photos')">Galeria</button>
     </div>
+
+    @if($activeTab === 'genetics')
+        <div class="row g-3">
+            <div class="col-12 col-lg-5">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h6 mb-3">Dodaj genotyp</h2>
+                        <form wire:submit="addGenotype" class="vstack gap-2">
+                            <select class="form-select @error('genotypeForm.genotype_id') is-invalid @enderror" wire:model="genotypeForm.genotype_id">
+                                <option value="">-- wybierz gen --</option>
+                                @foreach($genotypeCategories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }} ({{ $category->gene_code }})</option>
+                                @endforeach
+                            </select>
+                            @error('genotypeForm.genotype_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+
+                            <select class="form-select @error('genotypeForm.type') is-invalid @enderror" wire:model="genotypeForm.type">
+                                <option value="v">v - homozygota</option>
+                                <option value="h">h - heterozygota</option>
+                                <option value="p">p - poshet</option>
+                            </select>
+                            @error('genotypeForm.type') <div class="invalid-feedback">{{ $message }}</div> @enderror
+
+                            <button class="btn btn-primary" type="submit">Dodaj genotyp</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-7">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h6 mb-3">Genotyp zwierzecia</h2>
+                        @forelse($genotypes as $genotype)
+                            <div class="d-flex justify-content-between border-bottom py-2">
+                                <div>
+                                    <div>{{ $genotype->genotypeCategory?->name }} ({{ $genotype->genotypeCategory?->gene_code }})</div>
+                                    <div class="small text-muted">Typ: {{ $genotype->type }}</div>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" wire:click="deleteGenotype({{ $genotype->id }})">Usun</button>
+                            </div>
+                        @empty
+                            <p class="text-muted mb-0">Brak przypisanych genotypow.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     @if($activeTab === 'feedings')
         <div class="row g-3">

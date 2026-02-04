@@ -3,6 +3,8 @@
 namespace App\Livewire\Animals;
 
 use App\Models\Animal;
+use App\Models\AnimalGenotype;
+use App\Models\AnimalGenotypeCategory;
 use App\Models\Feeding;
 use App\Models\Note;
 use App\Models\Photo;
@@ -34,6 +36,8 @@ class Profile extends Component
 
     public array $noteForm = [];
 
+    public array $genotypeForm = [];
+
     public $photoUpload;
 
     public ?string $photo_taken_at = null;
@@ -49,13 +53,45 @@ class Profile extends Component
         $this->resetWeightForm();
         $this->resetShedForm();
         $this->resetNoteForm();
+        $this->resetGenotypeForm();
     }
 
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['feedings', 'weights', 'sheds', 'notes', 'photos'], true)) {
+        if (in_array($tab, ['genetics', 'feedings', 'weights', 'sheds', 'notes', 'photos'], true)) {
             $this->activeTab = $tab;
         }
+    }
+
+    public function addGenotype(): void
+    {
+        $data = $this->validate([
+            'genotypeForm.genotype_id' => ['required', 'integer', 'exists:animal_genotype_category,id'],
+            'genotypeForm.type' => ['required', 'in:v,h,p'],
+        ]);
+
+        AnimalGenotype::query()->updateOrCreate(
+            [
+                'animal_id' => $this->animal->id,
+                'genotype_id' => (int) $data['genotypeForm']['genotype_id'],
+            ],
+            [
+                'type' => $data['genotypeForm']['type'],
+            ],
+        );
+
+        $this->resetGenotypeForm();
+        session()->flash('success', 'Genotyp zostal zapisany.');
+    }
+
+    public function deleteGenotype(int $genotypePivotId): void
+    {
+        $genotype = AnimalGenotype::query()
+            ->where('animal_id', $this->animal->id)
+            ->findOrFail($genotypePivotId);
+
+        $genotype->delete();
+        session()->flash('success', 'Usunieto genotyp.');
     }
 
     public function addFeeding(FeedingService $feedingService): void
@@ -225,6 +261,14 @@ class Profile extends Component
         ];
     }
 
+    protected function resetGenotypeForm(): void
+    {
+        $this->genotypeForm = [
+            'genotype_id' => null,
+            'type' => 'h',
+        ];
+    }
+
     public function render()
     {
         $this->animal = Animal::query()
@@ -233,6 +277,12 @@ class Profile extends Component
 
         return view('livewire.animals.profile', [
             'animal' => $this->animal,
+            'genotypeCategories' => AnimalGenotypeCategory::query()->orderBy('name')->get(),
+            'genotypes' => AnimalGenotype::query()
+                ->where('animal_id', $this->animal->id)
+                ->with('genotypeCategory')
+                ->orderByDesc('id')
+                ->get(),
             'feedings' => Feeding::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest('fed_at')->get(),
             'weights' => Weight::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest('measured_at')->get(),
             'sheds' => Shed::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest('shed_at')->get(),

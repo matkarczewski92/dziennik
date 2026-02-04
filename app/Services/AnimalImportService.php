@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\HodowlaApiException;
 use App\Models\Animal;
+use App\Models\AnimalSpecies;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
@@ -31,7 +32,10 @@ class AnimalImportService
 
         $mapped = [
             'name' => Arr::get($payload, 'name', Arr::get($payload, 'animal_name', $secretTag)),
-            'species' => Arr::get($payload, 'species'),
+            'species_id' => $this->resolveSpeciesId(
+                Arr::get($payload, 'species'),
+                Arr::get($payload, 'animal_type_id', Arr::get($payload, 'species_id')),
+            ),
             'morph' => Arr::get($payload, 'morph'),
             'sex' => $this->normalizeSex(Arr::get($payload, 'sex')),
             'hatch_date' => $this->normalizeDate(Arr::get($payload, 'hatch_date', Arr::get($payload, 'birth_date'))),
@@ -56,6 +60,23 @@ class AnimalImportService
         return $animal->refresh();
     }
 
+    protected function resolveSpeciesId(?string $speciesName, mixed $speciesId): ?int
+    {
+        $speciesId = is_numeric($speciesId) ? (int) $speciesId : null;
+        if ($speciesId && AnimalSpecies::query()->whereKey($speciesId)->exists()) {
+            return $speciesId;
+        }
+
+        $speciesName = trim((string) $speciesName);
+        if ($speciesName === '') {
+            return null;
+        }
+
+        return AnimalSpecies::query()->firstOrCreate([
+            'name' => $speciesName,
+        ])->id;
+    }
+
     protected function normalizeSex(?string $sex): string
     {
         return match (strtolower((string) $sex)) {
@@ -78,4 +99,3 @@ class AnimalImportService
         }
     }
 }
-

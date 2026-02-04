@@ -12,6 +12,11 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call([
+            AnimalSpeciesSeeder::class,
+            AnimalGenotypeCategorySeeder::class,
+        ]);
+
         $userRole = Role::findOrCreate('user');
         $adminRole = Role::findOrCreate('admin');
 

@@ -62,6 +62,7 @@ class DashboardService
 
         return Animal::query()
             ->ownedBy($user)
+            ->with('species')
             ->withMax('weights', 'measured_at')
             ->orderBy('name')
             ->get()
@@ -77,4 +78,3 @@ class DashboardService
             ->values();
     }
 }
-
