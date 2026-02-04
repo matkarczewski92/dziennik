@@ -19,7 +19,7 @@ class AnimalProfileQueryService
 
     public function build(Animal $animal, int $shedsPage = 1, int $shedsPerPage = 10): AnimalProfileDTO
     {
-        $animal->loadMissing(['species', 'animalGenotypes.genotypeCategory', 'photos']);
+        $animal->loadMissing(['species', 'animalGenotypes.genotypeCategory', 'photos', 'coverPhoto']);
 
         $feedings = Feeding::query()
             ->where('animal_id', $animal->id)
@@ -47,7 +47,7 @@ class AnimalProfileQueryService
                 'type' => (string) $item->type,
             ])->values()->all();
 
-        $coverPhoto = $animal->photos->sortByDesc('id')->first();
+        $coverPhoto = $animal->coverPhoto ?? $animal->photos->sortByDesc('id')->first();
 
         return new AnimalProfileDTO(
             identity: [

@@ -81,6 +81,24 @@ class AnimalGalleryPanel extends Component
         $this->dispatch('animal-profile-refresh');
     }
 
+    public function setAsCover(int $photoId): void
+    {
+        $animal = $this->animal();
+        $this->authorize('update', $animal);
+
+        $photo = Photo::query()
+            ->ownedBy(auth()->id())
+            ->where('animal_id', $animal->id)
+            ->findOrFail($photoId);
+
+        $animal->update([
+            'cover_photo_id' => $photo->id,
+        ]);
+
+        session()->flash('success', 'Zdjecie glowne zostalo ustawione.');
+        $this->dispatch('animal-profile-refresh');
+    }
+
     public function openPhotoModal(int $photoId): void
     {
         $exists = Photo::query()
@@ -159,6 +177,7 @@ class AnimalGalleryPanel extends Component
         $animal = $this->animal();
 
         return view('livewire.animals.animal-gallery-panel', [
+            'coverPhotoId' => (int) ($animal->cover_photo_id ?? 0),
             'photos' => Photo::query()
                 ->ownedBy(auth()->id())
                 ->where('animal_id', $animal->id)
@@ -173,4 +192,3 @@ class AnimalGalleryPanel extends Component
         ]);
     }
 }
-

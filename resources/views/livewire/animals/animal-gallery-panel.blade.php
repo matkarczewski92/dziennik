@@ -58,6 +58,11 @@
                                 </button>
                                 <div class="p-2">
                                     <div class="small text-muted mb-2">Dodano: {{ $photo->created_at?->format('Y-m-d H:i') ?: '-' }}</div>
+                                    @if((int) $coverPhotoId === (int) $photo->id)
+                                        <div class="small text-success mb-2">Zdjecie glowne</div>
+                                    @else
+                                        <button class="btn btn-sm btn-outline-primary w-100 mb-2" wire:click="setAsCover({{ $photo->id }})">Ustaw jako glowne</button>
+                                    @endif
                                     <button class="btn btn-sm btn-outline-danger w-100" wire:click="deletePhoto({{ $photo->id }})">Usun</button>
                                 </div>
                             </div>
@@ -93,4 +98,3 @@
         </div>
     @endif
 </section>
-

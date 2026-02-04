@@ -30,6 +30,7 @@ class Animal extends Model
         'imported_from_api',
         'api_snapshot',
         'notes',
+        'cover_photo_id',
     ];
 
     protected function casts(): array
@@ -42,6 +43,7 @@ class Animal extends Model
             'species_id' => 'integer',
             'imported_from_api' => 'boolean',
             'api_snapshot' => 'array',
+            'cover_photo_id' => 'integer',
         ];
     }
 
@@ -85,6 +87,11 @@ class Animal extends Model
     public function photos(): HasMany
     {
         return $this->hasMany(Photo::class)->latest();
+    }
+
+    public function coverPhoto(): BelongsTo
+    {
+        return $this->belongsTo(Photo::class, 'cover_photo_id');
     }
 
     public function offers(): HasMany

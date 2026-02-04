@@ -69,6 +69,10 @@ class PhotoService
             throw new AuthorizationException();
         }
 
+        Animal::query()
+            ->where('cover_photo_id', $photo->id)
+            ->update(['cover_photo_id' => null]);
+
         if (! Str::startsWith($photo->path, ['http://', 'https://'])) {
             Storage::disk('public')->delete($photo->path);
         }
