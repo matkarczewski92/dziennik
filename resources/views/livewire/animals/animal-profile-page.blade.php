@@ -3,7 +3,7 @@
         :animal-id="$animal->id"
         :identity="$profile->identity"
         :genotype-chips="$profile->genotypeChips"
-        :wire:key="'animal-hero-'.$animal->id.'-'.count($profile->genotypeChips)"
+        :wire:key="'animal-hero-'.$animal->id.'-'.count($profile->genotypeChips).'-'.md5((string) ($profile->identity['cover_photo_url'] ?? '')).'-'.optional($animal->updated_at)->timestamp"
     />
     <livewire:animals.animal-gallery-panel :animal-id="$animal->id" :wire:key="'animal-gallery-'.$animal->id" />
 
