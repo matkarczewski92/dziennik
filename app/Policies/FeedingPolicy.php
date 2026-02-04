@@ -17,9 +17,9 @@ class FeedingPolicy
         return (int) $feeding->user_id === (int) $user->id;
     }
 
-    public function create(User $user, int $animalUserId): bool
+    public function create(User $user): bool
     {
-        return (int) $animalUserId === (int) $user->id;
+        return true;
     }
 
     public function update(User $user, Feeding $feeding): bool

@@ -3,18 +3,36 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
 
 class ImpersonateMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
+        $user = $request->user();
+        if ($user && (! $user->last_seen_at || $user->last_seen_at->lt(now()->subMinutes(2)))) {
+            $user->forceFill(['last_seen_at' => now()])->saveQuietly();
+        }
+
+        $impersonatorId = $request->session()->get('impersonator_id');
+        $isImpersonating = $impersonatorId !== null;
+        $impersonator = null;
+
+        if ($isImpersonating) {
+            $impersonator = User::query()->find($impersonatorId);
+
+            if (! $impersonator) {
+                $request->session()->forget('impersonator_id');
+                $isImpersonating = false;
+            }
+        }
+
+        View::share('isImpersonating', $isImpersonating);
+        View::share('impersonator', $impersonator);
+
         return $next($request);
     }
 }

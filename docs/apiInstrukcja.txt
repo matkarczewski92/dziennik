@@ -1,0 +1,65 @@
+API INSTRUKCJA - DZIENNIK HODOWLANY
+
+1) Endpoint
+GET /api/animals/{secret_tag}
+
+Przyklad:
+GET https://twoja-domena.pl/api/animals/A7K2P9
+
+2) Autoryzacja
+Wymagany naglowek:
+X-API-KEY: <apiDziennik>
+
+Klucz pobierany z tabeli system_config:
+- key = apiDziennik
+- value = token API
+
+3) Przyklad curl
+curl -X GET "https://twoja-domena.pl/api/animals/8LMCUF" \
+  -H "Accept: application/json" \
+  -H "X-API-KEY: TWOJ_API_DZIENNIK"
+
+4) Kody odpowiedzi
+- 200 OK: profil znaleziony
+- 401 Unauthorized: brak naglowka X-API-KEY
+- 403 Forbidden: niepoprawny klucz API
+- 404 Not Found: brak zwierzecia dla secret_tag
+- 429 Too Many Requests: przekroczony rate limit
+
+5) Struktura odpowiedzi (skrot)
+{
+  "animal": {
+    "id": 123,
+    "name": "Ultra amel",
+    "sex": 2,
+    "animal_type": { "id": 1, "name": "Lampropeltis" },
+    "animal_category_id": 1,
+    "public_profile_tag": "ABC123",
+    "secret_tag": "A7K2P9",
+    "created_at": "2026-02-04T12:00:00+00:00"
+  },
+  "genetics": [],
+  "feedings": [],
+  "weights": [],
+  "sheds": [],
+  "litters": [],
+  "gallery": [
+    {
+      "id": 1,
+      "url": "https://makssnake.pl/public/Image/xxx.jpg",
+      "is_main": 1,
+      "banner_position": 50,
+      "website": 1
+    }
+  ]
+}
+
+6) Zasada URL galerii
+- Jesli url z bazy NIE zaczyna sie od http/https:
+  zwracane jest: https://makssnake.pl + {url_z_bazy}
+- Jesli url juz ma http/https:
+  zwracane bez zmian
+
+7) Uwagi
+- API jest read-only (tylko odczyt danych)
+- Brak sesji/cookies/CSRF

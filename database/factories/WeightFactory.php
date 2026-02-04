@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Animal;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +19,11 @@ class WeightFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'user_id' => User::factory(),
+            'animal_id' => Animal::factory(),
+            'measured_at' => fake()->date(),
+            'weight_grams' => fake()->randomFloat(2, 50, 6000),
+            'notes' => fake()->optional()->sentence(),
         ];
     }
 }
