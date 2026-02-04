@@ -5,6 +5,7 @@ namespace App\Livewire\Animals;
 use App\Models\Animal;
 use App\Models\AnimalGenotype;
 use App\Models\AnimalGenotypeCategory;
+use App\Models\Feed;
 use App\Models\Feeding;
 use App\Models\Note;
 use App\Models\Photo;
@@ -98,7 +99,7 @@ class Profile extends Component
     {
         $data = $this->validate([
             'feedingForm.fed_at' => ['required', 'date'],
-            'feedingForm.prey' => ['required', 'string', 'max:255'],
+            'feedingForm.feed_id' => ['required', 'integer', 'exists:feeds,id'],
             'feedingForm.prey_weight_grams' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'feedingForm.quantity' => ['required', 'integer', 'min:1', 'max:50'],
             'feedingForm.notes' => ['nullable', 'string'],
@@ -226,9 +227,11 @@ class Profile extends Component
 
     protected function resetFeedingForm(): void
     {
+        $defaultFeedId = Feed::query()->orderBy('id')->value('id');
+
         $this->feedingForm = [
             'fed_at' => now()->toDateString(),
-            'prey' => '',
+            'feed_id' => $defaultFeedId ? (int) $defaultFeedId : null,
             'prey_weight_grams' => null,
             'quantity' => 1,
             'notes' => '',
@@ -283,7 +286,13 @@ class Profile extends Component
                 ->with('genotypeCategory')
                 ->orderByDesc('id')
                 ->get(),
-            'feedings' => Feeding::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest('fed_at')->get(),
+            'feedOptions' => Feed::query()->orderBy('name')->get(),
+            'feedings' => Feeding::query()
+                ->ownedBy(auth()->id())
+                ->where('animal_id', $this->animal->id)
+                ->with('feed')
+                ->latest('fed_at')
+                ->get(),
             'weights' => Weight::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest('measured_at')->get(),
             'sheds' => Shed::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest('shed_at')->get(),
             'notes' => Note::query()->ownedBy(auth()->id())->where('animal_id', $this->animal->id)->latest()->get(),

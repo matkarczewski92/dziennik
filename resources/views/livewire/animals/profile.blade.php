@@ -76,7 +76,12 @@
                         <h2 class="h6 mb-3">Dodaj karmienie</h2>
                         <form wire:submit="addFeeding" class="vstack gap-2">
                             <input type="date" class="form-control @error('feedingForm.fed_at') is-invalid @enderror" wire:model="feedingForm.fed_at">
-                            <input type="text" class="form-control @error('feedingForm.prey') is-invalid @enderror" wire:model="feedingForm.prey" placeholder="Rodzaj pokarmu">
+                            <select class="form-select @error('feedingForm.feed_id') is-invalid @enderror" wire:model="feedingForm.feed_id">
+                                <option value="">-- wybierz rodzaj karmy --</option>
+                                @foreach($feedOptions as $feedOption)
+                                    <option value="{{ $feedOption->id }}">{{ $feedOption->name }}</option>
+                                @endforeach
+                            </select>
                             <input type="number" step="0.01" class="form-control @error('feedingForm.prey_weight_grams') is-invalid @enderror" wire:model="feedingForm.prey_weight_grams" placeholder="Waga pokarmu (g)">
                             <input type="number" class="form-control @error('feedingForm.quantity') is-invalid @enderror" wire:model="feedingForm.quantity" placeholder="Ilosc">
                             <textarea class="form-control @error('feedingForm.notes') is-invalid @enderror" rows="3" wire:model="feedingForm.notes" placeholder="Notatka"></textarea>
@@ -92,7 +97,7 @@
                         @forelse($feedings as $feeding)
                             <div class="d-flex justify-content-between border-bottom py-2">
                                 <div>
-                                    <div>{{ $feeding->fed_at?->format('Y-m-d') }} — {{ $feeding->prey }}</div>
+                                    <div>{{ $feeding->fed_at?->format('Y-m-d') }} - {{ $feeding->feed?->name ?? $feeding->prey }}</div>
                                     <div class="small text-muted">{{ $feeding->prey_weight_grams ? number_format($feeding->prey_weight_grams, 2, ',', ' ') . ' g' : '-' }} | ilosc: {{ $feeding->quantity }}</div>
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger" wire:click="deleteFeeding({{ $feeding->id }})">Usun</button>

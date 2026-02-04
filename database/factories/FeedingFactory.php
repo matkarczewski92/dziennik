@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Animal;
+use App\Models\Feed;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,6 +22,7 @@ class FeedingFactory extends Factory
         return [
             'user_id' => User::factory(),
             'animal_id' => Animal::factory(),
+            'feed_id' => Feed::factory(),
             'fed_at' => fake()->date(),
             'prey' => fake()->randomElement(['mysz', 'szczur', 'przepiorka']),
             'prey_weight_grams' => fake()->randomFloat(2, 5, 300),

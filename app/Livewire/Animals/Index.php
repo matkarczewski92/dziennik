@@ -4,6 +4,7 @@ namespace App\Livewire\Animals;
 
 use App\Exceptions\HodowlaApiException;
 use App\Models\Animal;
+use App\Models\AnimalGenotypeCategory;
 use App\Models\AnimalSpecies;
 use App\Services\AnimalImportService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -32,7 +33,7 @@ class Index extends Component
 
     public ?int $species_id = null;
 
-    public ?string $morph = null;
+    public array $selectedMorphIds = [];
 
     public string $sex = 'unknown';
 
@@ -53,7 +54,8 @@ class Index extends Component
         return [
             'name' => ['required', 'string', 'max:255'],
             'species_id' => ['nullable', 'integer', 'exists:animal_species,id'],
-            'morph' => ['nullable', 'string', 'max:255'],
+            'selectedMorphIds' => ['array'],
+            'selectedMorphIds.*' => ['integer', 'exists:animal_genotype_category,id'],
             'sex' => ['required', 'in:male,female,unknown'],
             'hatch_date' => ['nullable', 'date'],
             'acquired_at' => ['nullable', 'date'],
@@ -103,7 +105,15 @@ class Index extends Component
         $this->editingId = $animal->id;
         $this->name = $animal->name;
         $this->species_id = $animal->species_id;
-        $this->morph = $animal->morph;
+        $morphNames = collect(explode(',', (string) $animal->morph))
+            ->map(fn (string $value): string => trim($value))
+            ->filter()
+            ->values();
+        $this->selectedMorphIds = AnimalGenotypeCategory::query()
+            ->whereIn('name', $morphNames)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
         $this->sex = $animal->sex;
         $this->hatch_date = $animal->hatch_date?->toDateString();
         $this->acquired_at = $animal->acquired_at?->toDateString();
@@ -116,6 +126,12 @@ class Index extends Component
     public function saveAnimal(): void
     {
         $validated = $this->validate();
+        $morphNames = AnimalGenotypeCategory::query()
+            ->whereIn('id', $validated['selectedMorphIds'] ?? [])
+            ->orderBy('name')
+            ->pluck('name')
+            ->all();
+        $validated['morph'] = ! empty($morphNames) ? implode(', ', $morphNames) : null;
 
         if ($this->editingId) {
             $animal = Animal::query()->ownedBy(auth()->id())->findOrFail($this->editingId);
@@ -168,7 +184,7 @@ class Index extends Component
     public function importAnimal(AnimalImportService $importService): void
     {
         $this->validate([
-            'importSecretTag' => ['required', 'string', 'max:255'],
+            'importSecretTag' => ['required', 'string', 'regex:/^[a-zA-Z0-9]{5,10}$/'],
         ]);
 
         try {
@@ -185,7 +201,7 @@ class Index extends Component
         $this->resetValidation();
         $this->name = '';
         $this->species_id = null;
-        $this->morph = null;
+        $this->selectedMorphIds = [];
         $this->sex = 'unknown';
         $this->hatch_date = null;
         $this->acquired_at = null;
@@ -199,6 +215,7 @@ class Index extends Component
         return view('livewire.animals.index', [
             'animals' => $this->animals,
             'speciesOptions' => AnimalSpecies::query()->orderBy('name')->get(),
+            'morphOptions' => AnimalGenotypeCategory::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 }

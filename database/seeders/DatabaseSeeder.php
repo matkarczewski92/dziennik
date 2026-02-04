@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AnimalSpeciesSeeder::class,
             AnimalGenotypeCategorySeeder::class,
+            FeedSeeder::class,
         ]);
 
         $userRole = Role::findOrCreate('user');

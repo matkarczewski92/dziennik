@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('animal_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('feed_id')->nullable()->constrained('feeds')->nullOnDelete();
             $table->date('fed_at');
             $table->string('prey');
             $table->decimal('prey_weight_grams', 8, 2)->nullable();

@@ -63,7 +63,7 @@
                     </div>
 
                     <div class="row g-2">
-                        <div class="col-12 col-md-6">
+                        <div class="col-12">
                             <label class="form-label">Gatunek</label>
                             <select class="form-select @error('species_id') is-invalid @enderror" wire:model="species_id">
                                 <option value="">-- wybierz gatunek --</option>
@@ -72,11 +72,6 @@
                                 @endforeach
                             </select>
                             @error('species_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label">Morph</label>
-                            <input type="text" class="form-control @error('morph') is-invalid @enderror" wire:model="morph">
-                            @error('morph') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
 
@@ -113,6 +108,23 @@
                     <div>
                         <label class="form-label">Notatka</label>
                         <textarea class="form-control @error('notes') is-invalid @enderror" wire:model="notes" rows="3"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Morphy</label>
+                        <select
+                            multiple
+                            class="form-select @error('selectedMorphIds') is-invalid @enderror @error('selectedMorphIds.*') is-invalid @enderror"
+                            wire:model="selectedMorphIds"
+                            size="8"
+                        >
+                            @foreach($morphOptions as $morphOption)
+                                <option value="{{ $morphOption->id }}">{{ $morphOption->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">Mozesz wybrac wiele pozycji (Ctrl/Cmd + klik).</div>
+                        @error('selectedMorphIds') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        @error('selectedMorphIds.*') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-2">

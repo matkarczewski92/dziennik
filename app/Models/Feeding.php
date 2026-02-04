@@ -15,6 +15,7 @@ class Feeding extends Model
     protected $fillable = [
         'user_id',
         'animal_id',
+        'feed_id',
         'fed_at',
         'prey',
         'prey_weight_grams',
@@ -26,6 +27,7 @@ class Feeding extends Model
     {
         return [
             'fed_at' => 'date',
+            'feed_id' => 'integer',
             'prey_weight_grams' => 'decimal:2',
         ];
     }
@@ -40,6 +42,11 @@ class Feeding extends Model
     public function animal(): BelongsTo
     {
         return $this->belongsTo(Animal::class);
+    }
+
+    public function feed(): BelongsTo
+    {
+        return $this->belongsTo(Feed::class);
     }
 
     public function user(): BelongsTo
