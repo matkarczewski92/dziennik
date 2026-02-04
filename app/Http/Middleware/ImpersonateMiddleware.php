@@ -20,6 +20,7 @@ class ImpersonateMiddleware
         $impersonatorId = $request->session()->get('impersonator_id');
         $isImpersonating = $impersonatorId !== null;
         $impersonator = null;
+        $isAdmin = $user?->hasRole('admin') ?? false;
 
         if ($isImpersonating) {
             $impersonator = User::query()->find($impersonatorId);
@@ -32,6 +33,7 @@ class ImpersonateMiddleware
 
         View::share('isImpersonating', $isImpersonating);
         View::share('impersonator', $impersonator);
+        View::share('isAdmin', $isAdmin);
 
         return $next($request);
     }

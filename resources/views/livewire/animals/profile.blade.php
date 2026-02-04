@@ -178,12 +178,22 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
                         <h2 class="h6 mb-3">Dodaj zdjecie</h2>
-                        <form wire:submit="uploadPhoto" class="vstack gap-2">
+                        <form
+                            wire:submit="uploadPhoto"
+                            class="vstack gap-2"
+                            x-data="{ isUploading: false, progress: 0 }"
+                            x-on:livewire-upload-start="isUploading = true"
+                            x-on:livewire-upload-finish="isUploading = false; progress = 0"
+                            x-on:livewire-upload-error="isUploading = false"
+                            x-on:livewire-upload-progress="progress = $event.detail.progress"
+                        >
                             <input type="file" class="form-control @error('photoUpload') is-invalid @enderror" wire:model="photoUpload" accept="image/*">
                             <small class="text-muted">Max 25MB. Zdjecie zostanie przeskalowane do max 1920x1080 i zapisane jako WebP.</small>
                             <input type="date" class="form-control @error('photo_taken_at') is-invalid @enderror" wire:model="photo_taken_at">
                             <textarea class="form-control @error('photo_notes') is-invalid @enderror" rows="3" wire:model="photo_notes" placeholder="Notatka do zdjecia"></textarea>
-                            <div wire:loading wire:target="photoUpload" class="small text-muted">Przesylanie...</div>
+                            <div class="progress" x-show="isUploading">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" x-bind:style="'width: ' + progress + '%'" x-text="progress + '%'"></div>
+                            </div>
                             <button class="btn btn-primary" type="submit">Zapisz zdjecie</button>
                         </form>
                     </div>

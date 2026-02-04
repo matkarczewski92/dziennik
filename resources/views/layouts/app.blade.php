@@ -15,7 +15,7 @@
             <nav class="nav flex-column gap-1">
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
                 <a class="nav-link {{ request()->routeIs('animals.*') ? 'active' : '' }}" href="{{ route('animals.index') }}">Zwierzęta</a>
-                @if(auth()->user()?->hasRole('admin'))
+                @if($isAdmin ?? false)
                     <div class="nav-separator mt-3 mb-1">Administrator</div>
                     <a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Użytkownicy</a>
                     <a class="nav-link {{ request()->routeIs('admin.system-config') ? 'active' : '' }}" href="{{ route('admin.system-config') }}">Konfiguracja</a>
@@ -58,4 +58,3 @@
     @livewireScripts
 </body>
 </html>
-
