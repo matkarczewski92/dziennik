@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('system_configs', function (Blueprint $table) {
             $table->id();
+            $table->string('key')->unique();
+            $table->longText('value')->nullable();
+            $table->string('type', 20)->default('string');
             $table->timestamps();
         });
     }

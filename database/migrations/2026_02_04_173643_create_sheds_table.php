@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('sheds', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('animal_id')->constrained()->cascadeOnDelete();
+            $table->date('shed_at');
+            $table->string('quality', 30)->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
+
+            $table->index(['user_id', 'shed_at']);
+            $table->index(['animal_id', 'shed_at']);
         });
     }
 

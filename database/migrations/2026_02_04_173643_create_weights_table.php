@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('weights', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('animal_id')->constrained()->cascadeOnDelete();
+            $table->date('measured_at');
+            $table->decimal('weight_grams', 8, 2);
+            $table->text('notes')->nullable();
             $table->timestamps();
+
+            $table->index(['user_id', 'measured_at']);
+            $table->index(['animal_id', 'measured_at']);
         });
     }
 

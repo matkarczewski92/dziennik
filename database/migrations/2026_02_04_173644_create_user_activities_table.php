@@ -13,7 +13,16 @@ return new class extends Migration
     {
         Schema::create('user_activities', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->foreignId('causer_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('acted_as_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('action');
+            $table->string('subject_type')->nullable();
+            $table->unsignedBigInteger('subject_id')->nullable();
+            $table->json('meta')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+
+            $table->index(['acted_as_id', 'created_at']);
+            $table->index(['causer_id', 'created_at']);
         });
     }
 

@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Animal;
+use App\Models\Photo;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Intervention\Image\Laravel\Facades\Image;
+
+class PhotoService
+{
+    public function store(User $user, Animal $animal, UploadedFile $file, array $data = []): Photo
+    {
+        $this->ensureOwnership($user, $animal);
+
+        $image = Image::read($file->getRealPath());
+        $image->scaleDown(width: 1920, height: 1080);
+        $encoded = $image->toWebp(80);
+
+        $path = "animals/{$animal->id}/".Str::uuid().'.webp';
+        Storage::disk('public')->put($path, (string) $encoded);
+
+        return Photo::query()->create([
+            'user_id' => $user->id,
+            'animal_id' => $animal->id,
+            'path' => $path,
+            'mime_type' => 'image/webp',
+            'size_kb' => (int) ceil(strlen((string) $encoded) / 1024),
+            'taken_at' => $data['taken_at'] ?? null,
+            'notes' => $data['notes'] ?? null,
+        ]);
+    }
+
+    public function delete(User $user, Photo $photo): void
+    {
+        if ((int) $photo->user_id !== (int) $user->id) {
+            throw new AuthorizationException();
+        }
+
+        Storage::disk('public')->delete($photo->path);
+        $photo->delete();
+    }
+
+    protected function ensureOwnership(User $user, Animal $animal): void
+    {
+        if ((int) $animal->user_id !== (int) $user->id) {
+            throw new AuthorizationException();
+        }
+    }
+}
+

@@ -13,7 +13,17 @@ return new class extends Migration
     {
         Schema::create('feedings', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('animal_id')->constrained()->cascadeOnDelete();
+            $table->date('fed_at');
+            $table->string('prey');
+            $table->decimal('prey_weight_grams', 8, 2)->nullable();
+            $table->unsignedSmallInteger('quantity')->default(1);
+            $table->text('notes')->nullable();
             $table->timestamps();
+
+            $table->index(['user_id', 'fed_at']);
+            $table->index(['animal_id', 'fed_at']);
         });
     }
 
