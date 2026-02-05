@@ -22,6 +22,7 @@
 body {
     color: var(--bs-body-color);
     background: radial-gradient(circle at top right, var(--app-bg-soft), var(--app-bg) 58%);
+    overflow-x: hidden;
 }
 
 .app-shell {
@@ -455,5 +456,9 @@ body {
 
     .timeline-date {
         min-width: 0;
+    }
+
+    .weight-chart {
+        min-width: 560px;
     }
 }

@@ -7,7 +7,7 @@
     />
     <livewire:animals.animal-gallery-panel :animal-id="$animal->id" :wire:key="'animal-gallery-'.$animal->id" />
 
-    <div class="row g-3 align-items-start">
+    <div class="row g-3 align-items-start mx-0">
         <div class="col-12 col-xl-3">
             <livewire:animals.animal-sidebar-details
                 :animal-id="$animal->id"

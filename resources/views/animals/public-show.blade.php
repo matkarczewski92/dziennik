@@ -42,7 +42,7 @@
             </div>
         </section>
 
-        <div class="row g-3 align-items-start">
+        <div class="row g-3 align-items-start mx-0">
             <div class="col-12 col-xl-3">
                 <div class="card border-0 shadow-sm mb-3">
                     <div class="card-body">
