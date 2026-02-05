@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\PublicAnimalProfileController;
+use App\Http\Controllers\PublicStorageFileController;
 use App\Models\Animal;
 use App\Services\CurrentOffersApiService;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/dashboard');
 
 Route::get('/profil/{token}', PublicAnimalProfileController::class)->name('animals.public');
+Route::get('/storage/{path}', PublicStorageFileController::class)
+    ->where('path', '.*')
+    ->name('storage.public');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
