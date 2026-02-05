@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Notifications\PolishResetPasswordNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -136,7 +136,7 @@ class AuthFlowTest extends TestCase
 
         $response->assertSessionHasNoErrors();
         $response->assertSessionHas('status');
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, PolishResetPasswordNotification::class);
     }
 
     public function test_user_can_reset_password_from_link(): void

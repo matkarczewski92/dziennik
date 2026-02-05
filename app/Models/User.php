@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\PolishResetPasswordNotification;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -67,5 +68,10 @@ class User extends Authenticatable
     public function activitiesAsActor(): HasMany
     {
         return $this->hasMany(UserActivity::class, 'acted_as_id');
+    }
+
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new PolishResetPasswordNotification($token));
     }
 }
