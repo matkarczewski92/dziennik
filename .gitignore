@@ -19,3 +19,4 @@ yarn-error.log
 /.vscode
 /docs/PLAYBOOK.md
 docs/api_schema.md
+docs/
