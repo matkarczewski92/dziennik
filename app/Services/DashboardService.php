@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Animal;
 use App\Models\SystemConfig;
 use App\Models\User;
+use App\Support\RichTextSanitizer;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -12,7 +13,7 @@ class DashboardService
 {
     public function globalMessage(): ?string
     {
-        return SystemConfig::getValue('global_message');
+        return RichTextSanitizer::sanitize(SystemConfig::getValue('global_message'));
     }
 
     public function feedingReminders(User $user): array

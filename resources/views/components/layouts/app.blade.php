@@ -9,6 +9,10 @@
     @livewireStyles
 </head>
 <body class="bg-body-tertiary">
+    @php
+        $currentUserName = auth()->user()?->name ?? 'Uzytkowniku';
+        $todayLabel = now()->locale('pl')->translatedFormat('j F Y');
+    @endphp
     <div class="app-shell">
         <aside class="app-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebarNav" aria-labelledby="sidebarNavLabel">
             <div class="offcanvas-header d-lg-none">
@@ -44,6 +48,7 @@
                             @endforelse
                         </div>
                         <a class="nav-link {{ request()->routeIs('account.settings') ? 'active' : '' }}" href="{{ route('account.settings') }}">Konto</a>
+                        <a class="nav-link {{ request()->routeIs('instruction') ? 'active' : '' }}" href="{{ route('instruction') }}">Instrukcja</a>
                         <hr class="my-2 border-secondary-subtle">
                         <a class="nav-link {{ request()->routeIs('offers.current') ? 'active' : '' }}" href="{{ route('offers.current') }}">Aktualna oferta</a>
                         @if($isAdmin ?? false)
@@ -68,7 +73,7 @@
                     >
                         Menu
                     </button>
-                    <strong>{{ auth()->user()?->name }}</strong>
+                    <strong>Witaj, {{ $currentUserName }}, dzis jest {{ $todayLabel }}.</strong>
                 </div>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
@@ -96,6 +101,8 @@
             {{ $slot }}
         </main>
     </div>
+
+    <x-cookie-consent-banner />
 
     @livewireScripts
 </body>

@@ -1,4 +1,10 @@
 <x-layouts.guest>
+    @if (session('status'))
+        <div class="alert alert-success" role="alert">
+            {{ session('status') }}
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('login.store') }}" class="vstack gap-3">
         @csrf
         <div>
@@ -24,10 +30,12 @@
 
         <button class="btn btn-primary" type="submit">Zaloguj</button>
     </form>
+    <p class="text-center mt-3 mb-0">
+        <a href="{{ route('password.request') }}">Nie pamietam hasla</a>
+    </p>
 
     <p class="text-center mt-4 mb-0">
         Nie masz konta?
         <a href="{{ route('register') }}">Zarejestruj sie</a>
     </p>
 </x-layouts.guest>
-

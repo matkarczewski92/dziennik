@@ -55,6 +55,17 @@ class AnimalImportService
             $normalizedSecretTag = trim($secretTag);
         }
 
+        $takenByOtherUser = Animal::query()
+            ->where('secret_tag', $normalizedSecretTag)
+            ->where('user_id', '!=', $user->id)
+            ->exists();
+
+        if ($takenByOtherUser) {
+            throw new HodowlaApiException(
+                'To zwierze jest juz przypisane do innego konta. Import bedzie mozliwy po usunieciu go z tamtego konta.'
+            );
+        }
+
         $weightsPayload = $this->arrayRecords(Arr::get($data, 'weights'));
         $currentWeightFromWeights = $this->latestWeightValue($weightsPayload);
 

@@ -113,6 +113,11 @@ body {
     background-attachment: fixed;
 }
 
+.public-profile-main {
+    min-height: 100vh;
+    padding: 1.5rem;
+}
+
 .app-topbar {
     display: flex;
     justify-content: space-between;
@@ -128,6 +133,33 @@ body {
 .animal-life-page .card {
     background: rgba(8, 21, 35, 0.88);
     border: 1px solid rgba(157, 176, 196, 0.2);
+}
+
+.cookie-consent-banner {
+    position: fixed;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1200;
+    background: rgba(8, 24, 45, 0.96);
+    border: 1px solid rgba(106, 164, 255, 0.35);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    color: #eaf1ff;
+    padding: 0.85rem 1rem;
+}
+
+.cookie-consent-content {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.cookie-consent-content p {
+    margin: 0;
+    max-width: 920px;
 }
 
 .animal-hero {

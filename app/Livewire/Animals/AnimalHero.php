@@ -5,6 +5,7 @@ namespace App\Livewire\Animals;
 use App\Models\Animal;
 use App\Models\AnimalSpecies;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Str;
 use Livewire\Component;
 
 class AnimalHero extends Component
@@ -20,6 +21,10 @@ class AnimalHero extends Component
     public bool $showEditModal = false;
 
     public array $form = [];
+
+    public bool $showShareModal = false;
+
+    public ?string $publicProfileUrl = null;
 
     public function genotypeSummary(): string
     {
@@ -69,6 +74,7 @@ class AnimalHero extends Component
             'acquired_at' => $animal->acquired_at?->toDateString(),
             'current_weight_grams' => $animal->current_weight_grams !== null ? (float) $animal->current_weight_grams : null,
             'feeding_interval_days' => (int) $animal->feeding_interval_days,
+            'social_media_consent' => (bool) $animal->social_media_consent,
         ];
 
         $this->showEditModal = true;
@@ -78,6 +84,37 @@ class AnimalHero extends Component
     {
         $this->showEditModal = false;
         $this->resetValidation();
+    }
+
+    public function openShareModal(): void
+    {
+        $animal = $this->animal();
+        $this->authorize('update', $animal);
+
+        if (! $animal->public_profile_enabled || ! $animal->public_profile_token) {
+            $animal->update([
+                'public_profile_enabled' => true,
+                'public_profile_token' => $animal->public_profile_token ?: $this->generatePublicToken(),
+            ]);
+        }
+
+        $this->publicProfileUrl = route('animals.public', ['token' => $animal->public_profile_token]);
+        $this->showShareModal = true;
+    }
+
+    public function disablePublicProfile(): void
+    {
+        $animal = $this->animal();
+        $this->authorize('update', $animal);
+
+        $animal->update([
+            'public_profile_enabled' => false,
+        ]);
+
+        $this->showShareModal = false;
+        $this->publicProfileUrl = null;
+        session()->flash('success', 'Udostepnianie profilu zostalo wylaczone.');
+        $this->dispatch('animal-profile-refresh');
     }
 
     public function saveBasicData(): void
@@ -93,13 +130,17 @@ class AnimalHero extends Component
             'form.acquired_at' => ['nullable', 'date'],
             'form.current_weight_grams' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'form.feeding_interval_days' => ['required', 'integer', 'min:1', 'max:90'],
+            'form.social_media_consent' => ['nullable', 'boolean'],
         ]);
 
-        $animal->update($validated['form']);
+        $payload = $validated['form'];
+        $payload['social_media_consent'] = (bool) ($payload['social_media_consent'] ?? false);
+
+        $animal->update($payload);
         $this->showEditModal = false;
 
         session()->flash('success', 'Dane podstawowe zostaly zaktualizowane.');
-        $this->dispatch('animal-profile-refresh');
+        $this->redirectRoute('animals.show', $animal, navigate: true);
     }
 
     protected function animal(): Animal
@@ -107,6 +148,15 @@ class AnimalHero extends Component
         return Animal::query()
             ->ownedBy(auth()->id())
             ->findOrFail($this->animalId);
+    }
+
+    protected function generatePublicToken(): string
+    {
+        do {
+            $token = Str::random(48);
+        } while (Animal::query()->where('public_profile_token', $token)->exists());
+
+        return $token;
     }
 
     public function render()

@@ -30,6 +30,9 @@ class Animal extends Model
         'imported_from_api',
         'api_snapshot',
         'notes',
+        'social_media_consent',
+        'public_profile_enabled',
+        'public_profile_token',
         'cover_photo_id',
     ];
 
@@ -43,6 +46,8 @@ class Animal extends Model
             'species_id' => 'integer',
             'imported_from_api' => 'boolean',
             'api_snapshot' => 'array',
+            'social_media_consent' => 'boolean',
+            'public_profile_enabled' => 'boolean',
             'cover_photo_id' => 'integer',
         ];
     }

@@ -38,6 +38,7 @@
                             <td>{{ $user->last_seen_at?->format('Y-m-d H:i') ?: '-' }}</td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-info" wire:click="startEdit({{ $user->id }})">Edytuj</button>
                                     @if(!$user->hasRole('admin'))
                                         <button class="btn btn-outline-primary" wire:click="startImpersonation({{ $user->id }})">Impersonuj</button>
                                     @endif
@@ -45,6 +46,7 @@
                                         <button class="btn btn-outline-warning" wire:click="toggleBlock({{ $user->id }})">
                                             {{ $user->is_blocked ? 'Odblokuj' : 'Zablokuj' }}
                                         </button>
+                                        <button class="btn btn-outline-danger" wire:click="confirmDelete({{ $user->id }})">Usun konto</button>
                                     @endif
                                     <button class="btn btn-outline-secondary" wire:click="showActivity({{ $user->id }})">Aktywnosc</button>
                                 </div>
@@ -64,6 +66,43 @@
         {{ $users->links() }}
     </div>
 
+    @if($editingUserId)
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Edycja uzytkownika #{{ $editingUserId }}</strong>
+                <button class="btn btn-sm btn-outline-secondary" wire:click="cancelEdit">Zamknij</button>
+            </div>
+            <div class="card-body">
+                <form wire:submit="saveEdit" class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="edit-name">Nazwa</label>
+                        <input id="edit-name" type="text" class="form-control @error('editName') is-invalid @enderror" wire:model="editName">
+                        @error('editName') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="edit-email">Email</label>
+                        <input id="edit-email" type="email" class="form-control @error('editEmail') is-invalid @enderror" wire:model="editEmail">
+                        @error('editEmail') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-12 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" wire:click="cancelEdit">Anuluj</button>
+                        <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
+    @if($deleteUserId)
+        <div class="alert alert-danger mt-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>Czy na pewno chcesz usunac konto uzytkownika #{{ $deleteUserId }}? Tej operacji nie da sie cofnac.</span>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-light" wire:click="cancelDelete">Anuluj</button>
+                <button class="btn btn-sm btn-danger" wire:click="deleteUser">Usun konto</button>
+            </div>
+        </div>
+    @endif
+
     @if($activityUserId)
         <div class="card border-0 shadow-sm mt-4">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -74,7 +113,11 @@
                 @forelse($activities as $activity)
                     <div class="border-bottom py-2">
                         <div class="small text-muted">{{ $activity->created_at?->format('Y-m-d H:i:s') }}</div>
-                        <div><code>{{ $activity->action }}</code></div>
+                        <div>{{ $this->actionLabel($activity->action) }}</div>
+                        <div class="small text-muted">
+                            Kto: {{ $activity->causer?->name ?? 'system' }} |
+                            Dotyczy: {{ $activity->actedAs?->name ?? '-' }}
+                        </div>
                     </div>
                 @empty
                     <p class="text-muted mb-0">Brak zdarzen.</p>

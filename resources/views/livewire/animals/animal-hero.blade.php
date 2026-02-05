@@ -20,11 +20,43 @@
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <a href="{{ route('animals.index') }}" class="btn btn-outline-light btn-sm">Powrot do listy</a>
+                    <button type="button" class="btn btn-outline-info btn-sm" wire:click="openShareModal">Udostepnij profil</button>
                     <button type="button" class="btn btn-primary btn-sm" wire:click="openEditModal">Edytuj dane</button>
                 </div>
             </div>
         </div>
     </section>
+
+    @if($showShareModal)
+        <div class="livewire-modal-backdrop">
+            <div class="livewire-modal">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="h6 mb-0">Udostepnij profil</h3>
+                    <button class="btn-close" type="button" wire:click="$set('showShareModal', false)"></button>
+                </div>
+
+                <p class="small text-muted mb-2">
+                    Link prowadzi do publicznego profilu tylko do odczytu (bez mozliwosci edycji i usuwania danych).
+                </p>
+                <label class="form-label small text-muted mb-1">Link publiczny</label>
+                <div class="input-group mb-3">
+                    <input id="public-profile-link-{{ $this->getId() }}" type="text" class="form-control" readonly value="{{ $publicProfileUrl ?? '' }}">
+                    <button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        onclick="navigator.clipboard?.writeText(document.getElementById('public-profile-link-{{ $this->getId() }}')?.value || '')"
+                    >
+                        Kopiuj
+                    </button>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" wire:click="$set('showShareModal', false)">Zamknij</button>
+                    <button type="button" class="btn btn-outline-danger" wire:click="disablePublicProfile">Wylacz udostepnianie</button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     @if($showEditModal)
         <div class="livewire-modal-backdrop">
@@ -78,6 +110,18 @@
                         <label class="form-label">Interwal karmienia (dni)</label>
                         <input type="number" min="1" max="90" class="form-control @error('form.feeding_interval_days') is-invalid @enderror" wire:model="form.feeding_interval_days">
                         @error('form.feeding_interval_days') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="col-12 mt-2">
+                        <div class="border rounded p-3">
+                            <label class="form-label mb-2">Czy wyrazasz zgode na uzycie zdjec Twojego zwierzaka w mediach spolecznosciowych MaksSnake?</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="social_media_consent_{{ $this->getId() }}" wire:model="form.social_media_consent">
+                                <label class="form-check-label" for="social_media_consent_{{ $this->getId() }}">
+                                    {{ !empty($form['social_media_consent']) ? 'Tak' : 'Nie' }}
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col-12 d-flex justify-content-end gap-2 mt-2">

@@ -272,4 +272,43 @@ class AnimalImportSchemaMappingTest extends TestCase
 
         (new AnimalImportService($client))->importBySecretTag($user, 'QHPU4R');
     }
+
+    public function test_import_is_blocked_when_secret_tag_is_already_assigned_to_other_user(): void
+    {
+        $this->expectException(HodowlaApiException::class);
+        $this->expectExceptionMessage('juz przypisane do innego konta');
+
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        Animal::query()->create([
+            'user_id' => $owner->id,
+            'name' => 'Istniejacy',
+            'secret_tag' => 'QHPU4R',
+            'feeding_interval_days' => 14,
+        ]);
+
+        $payload = [
+            'data' => [
+                'animal' => [
+                    'id' => 123,
+                    'name' => 'Mamba',
+                    'sex' => 2,
+                    'animal_type' => ['id' => 77, 'name' => 'Python regius'],
+                    'secret_tag' => 'QHPU4R',
+                ],
+                'genetics' => [],
+                'feedings' => [],
+                'weights' => [],
+                'sheds' => [],
+                'litters' => [],
+                'gallery' => [],
+            ],
+        ];
+
+        $client = Mockery::mock(HodowlaApiClient::class);
+        $client->shouldReceive('fetchAnimalBySecretTag')->once()->andReturn($payload);
+
+        (new AnimalImportService($client))->importBySecretTag($otherUser, 'QHPU4R');
+    }
 }

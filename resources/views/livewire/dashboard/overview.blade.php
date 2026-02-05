@@ -7,8 +7,8 @@
     @if($globalMessage)
         <div class="card border-0 shadow-sm mb-3">
             <div class="card-body">
-                <h2 class="h6 text-uppercase text-muted mb-2">Komunikat hodowcy</h2>
-                <p class="mb-0">{{ $globalMessage }}</p>
+                <h2 class="h6 text-uppercase text-muted mb-2">Komunikaty administratora</h2>
+                <div class="mb-0">{!! $globalMessage !!}</div>
             </div>
         </div>
     @endif
