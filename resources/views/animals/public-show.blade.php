@@ -149,7 +149,7 @@
                                     @endforeach
 
                                     @foreach($chart['x_ticks'] as $tick)
-                                        <text x="{{ $tick['x'] }}" y="54.5" text-anchor="end" transform="rotate(-36 {{ $tick['x'] }} 54.5)" class="weight-axis-label-x">{{ $tick['label'] }}</text>
+                                        <text x="{{ $tick['x'] }}" y="53.2" text-anchor="middle" transform="rotate(-28 {{ $tick['x'] }} 53.2)" class="weight-axis-label-x">{{ $tick['label'] }}</text>
                                     @endforeach
                                 </svg>
                                 <div class="d-flex justify-content-center small text-muted mt-1">

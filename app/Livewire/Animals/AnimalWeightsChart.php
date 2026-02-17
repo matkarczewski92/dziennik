@@ -128,14 +128,17 @@ class AnimalWeightsChart extends Component
         $minRaw = (float) $yValues->min();
         $maxRaw = (float) $yValues->max();
 
-        $minY = floor($minRaw / 50) * 50;
-        $maxY = ceil($maxRaw / 50) * 50;
-        $minY = min($minY, floor(($minRaw - 10) / 10) * 10);
-        $maxY = max($maxY, ceil(($maxRaw + 10) / 10) * 10);
+        $range = max($maxRaw - $minRaw, 1.0);
+        $padding = max(5.0, $range * 0.1);
+        $minY = max(0.0, $minRaw - $padding);
+        $maxY = $maxRaw + $padding;
 
-        if (abs($maxY - $minY) < 0.001) {
-            $minY -= 10;
-            $maxY += 10;
+        $step = $this->resolveTickStep($maxY - $minY, 6);
+        $minY = floor($minY / $step) * $step;
+        $maxY = ceil($maxY / $step) * $step;
+
+        if (($maxY - $minY) < $step) {
+            $maxY = $minY + $step;
         }
 
         $dateIndex = [];
@@ -144,8 +147,8 @@ class AnimalWeightsChart extends Component
         }
 
         $chartBounds = [
-            'left' => 11.0,
-            'right' => 100.0,
+            'left' => 12.0,
+            'right' => 98.0,
             'top' => 2.0,
             'bottom' => 45.0,
         ];
@@ -168,10 +171,7 @@ class AnimalWeightsChart extends Component
     protected function buildYTicks(float $minY, float $maxY, array $bounds): array
     {
         $ticks = [];
-        $step = 50.0;
-        if (($maxY - $minY) > 350) {
-            $step = 100.0;
-        }
+        $step = $this->resolveTickStep($maxY - $minY, 6);
 
         for ($value = $minY; $value <= $maxY + 0.0001; $value += $step) {
             $ratio = ($value - $minY) / ($maxY - $minY);
@@ -179,7 +179,7 @@ class AnimalWeightsChart extends Component
 
             $ticks[] = [
                 'y' => $y,
-                'label' => number_format($value, 0, '.', ''),
+                'label' => number_format($value, $step < 1 ? 1 : 0, '.', ''),
             ];
         }
 
@@ -193,7 +193,7 @@ class AnimalWeightsChart extends Component
             return [];
         }
 
-        $maxLabels = 8;
+        $maxLabels = 6;
         $step = (int) max(1, ceil($count / $maxLabels));
         $maxIndex = max(count($dateIndex) - 1, 1);
         $width = $bounds['right'] - $bounds['left'];
@@ -209,19 +209,57 @@ class AnimalWeightsChart extends Component
             $x = $bounds['left'] + (($index / $maxIndex) * $width);
             $ticks[] = [
                 'x' => $x,
-                'label' => $date,
+                'label' => $this->formatDateTickLabel($date),
+                'raw' => $date,
             ];
         }
 
         $last = (string) $dates->last();
-        if (($ticks[count($ticks) - 1]['label'] ?? null) !== $last) {
+        if (($ticks[count($ticks) - 1]['raw'] ?? null) !== $last) {
             $ticks[] = [
                 'x' => $bounds['right'],
-                'label' => $last,
+                'label' => $this->formatDateTickLabel($last),
+                'raw' => $last,
             ];
         }
 
-        return $ticks;
+        return array_map(static fn (array $tick): array => [
+            'x' => $tick['x'],
+            'label' => $tick['label'],
+        ], $ticks);
+    }
+
+    protected function formatDateTickLabel(string $date): string
+    {
+        $parsed = \DateTimeImmutable::createFromFormat('Y-m-d', $date);
+        if (! $parsed instanceof \DateTimeImmutable) {
+            return $date;
+        }
+
+        return $parsed->format('d.m.y');
+    }
+
+    protected function resolveTickStep(float $range, int $targetTicks): float
+    {
+        $targetTicks = max(2, $targetTicks);
+        $range = max($range, 0.000001);
+        $roughStep = $range / ($targetTicks - 1);
+        $magnitude = 10 ** floor(log10($roughStep));
+        $normalized = $roughStep / $magnitude;
+
+        if ($normalized <= 1.0) {
+            $nice = 1.0;
+        } elseif ($normalized <= 2.0) {
+            $nice = 2.0;
+        } elseif ($normalized <= 2.5) {
+            $nice = 2.5;
+        } elseif ($normalized <= 5.0) {
+            $nice = 5.0;
+        } else {
+            $nice = 10.0;
+        }
+
+        return $nice * $magnitude;
     }
 
     protected function normalizePoints(Collection $points): Collection
