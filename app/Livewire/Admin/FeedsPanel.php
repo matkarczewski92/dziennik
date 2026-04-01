@@ -39,7 +39,7 @@ class FeedsPanel extends Component
             ->when($this->search !== '', function ($query): void {
                 $query->where('name', 'like', '%'.$this->search.'%');
             })
-            ->orderBy('name')
+            ->orderBy('id')
             ->paginate(12);
     }
 

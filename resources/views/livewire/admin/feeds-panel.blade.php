@@ -60,10 +60,7 @@
                         <th>ID</th>
                         <th>Nazwa</th>
                         <th>Interwal</th>
-                        <th>Stan</th>
-                        <th>Ostatnia cena</th>
                         <th>Powiazane karmienia</th>
-                        <th>Aktualizacja</th>
                         <th class="text-end">Akcje</th>
                     </tr>
                 </thead>
@@ -73,14 +70,11 @@
                             <td>{{ $feed->id }}</td>
                             <td>{{ $feed->name }}</td>
                             <td>{{ $feed->feeding_interval }} dni</td>
-                            <td>{{ $feed->amount }}</td>
-                            <td>{{ number_format((float) $feed->last_price, 2, ',', ' ') }} zl</td>
                             <td>
                                 <span class="badge {{ $feed->feedings_count > 0 ? 'text-bg-info' : 'text-bg-secondary' }}">
                                     {{ $feed->feedings_count }}
                                 </span>
                             </td>
-                            <td>{{ $feed->updated_at?->format('Y-m-d H:i') ?: '-' }}</td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-info" wire:click="startEdit({{ $feed->id }})">Edytuj</button>
@@ -90,7 +84,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">Brak wpisow karmy.</td>
+                            <td colspan="5" class="text-center text-muted py-4">Brak wpisow karmy.</td>
                         </tr>
                     @endforelse
                 </tbody>
