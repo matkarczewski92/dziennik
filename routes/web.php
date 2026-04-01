@@ -70,6 +70,7 @@ Route::middleware(['auth', 'not_blocked'])->group(function (): void {
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function (): void {
         Route::get('/users', fn () => view('admin.users'))->name('users');
+        Route::get('/feeds', fn () => view('admin.feeds'))->name('feeds');
         Route::get('/system-config', fn () => view('admin.system-config'))->name('system-config');
         Route::post('/impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate');
     });

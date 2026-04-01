@@ -18,6 +18,7 @@
                 @if($isAdmin ?? false)
                     <div class="nav-separator mt-3 mb-1">Administrator</div>
                     <a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Użytkownicy</a>
+                    <a class="nav-link {{ request()->routeIs('admin.feeds') ? 'active' : '' }}" href="{{ route('admin.feeds') }}">Karma</a>
                     <a class="nav-link {{ request()->routeIs('admin.system-config') ? 'active' : '' }}" href="{{ route('admin.system-config') }}">Konfiguracja</a>
                 @endif
             </nav>

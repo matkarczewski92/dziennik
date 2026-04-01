@@ -221,6 +221,9 @@ class UsersPanel extends Component
             'admin.user.delete' => 'Administrator usunal konto',
             'admin.impersonation.start' => 'Administrator rozpoczal impersonacje',
             'admin.impersonation.stop' => 'Administrator zakonczyl impersonacje',
+            'admin.feed.create' => 'Administrator dodal wpis karmy',
+            'admin.feed.update' => 'Administrator zaktualizowal wpis karmy',
+            'admin.feed.delete' => 'Administrator usunal wpis karmy',
             default => 'Zdarzenie systemowe',
         };
     }
